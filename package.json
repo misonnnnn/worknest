@@ -1,0 +1,33 @@
+{
+  "name": "worknest",
+  "version": "0.1.0",
+  "private": true,
+  "description": "WorkNest ERP — Phase 1 foundation (auth, RBAC, HR structure)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "dev:api": "npm run dev -w @worknest/api",
+    "dev:web": "npm run dev -w @worknest/web",
+    "build": "npm run build -w @worknest/types && npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "typecheck": "npm run build -w @worknest/types && npm run typecheck --workspaces --if-present",
+    "test": "npm run test -w @worknest/api",
+    "db:generate": "npm run db:generate -w @worknest/api",
+    "db:migrate": "npm run db:migrate -w @worknest/api",
+    "db:migrate:dev": "npm run db:migrate:dev -w @worknest/api",
+    "db:seed": "npm run db:seed -w @worknest/api",
+    "db:studio": "npm run db:studio -w @worknest/api"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.3"
+  }
+}
