@@ -153,8 +153,18 @@ export const positionsService = {
     actorId: string,
     meta: { ipAddress?: string | null; userAgent?: string | null },
   ) {
-    const existing = await prisma.position.findUnique({ where: { id } });
+    const existing = await prisma.position.findUnique({
+      where: { id },
+      include: { _count: { select: { employees: true } } },
+    });
     if (!existing) throw notFound('Position not found');
+    if (existing._count.employees > 0) {
+      throw conflict(
+        'Cannot delete a position that still has employees. Reassign them first.',
+        { employeeCount: existing._count.employees },
+      );
+    }
+
     await prisma.position.delete({ where: { id } });
     await writeAuditLog({
       userId: actorId,

@@ -1,9 +1,12 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
+import type { PaginatedResult } from '@worknest/types';
 import { ResourceListPage } from '@/components/resource-list';
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import { RowActions } from '@/components/row-actions';
 import { useAuth } from '@/components/auth-provider';
-import { apiRequest } from '@/lib/api';
+import { apiRequest, ApiClientError } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -14,34 +17,126 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+type DepartmentOption = { id: string; name: string; code: string };
 
 type PositionRow = {
   id: string;
   title: string;
   code: string;
-  department: { name: string } | null;
+  description: string | null;
+  departmentId: string | null;
+  department: { id: string; name: string; code: string } | null;
   employeeCount: number;
+};
+
+type PositionFormState = {
+  title: string;
+  code: string;
+  description: string;
+  departmentId: string;
+};
+
+const NONE = '__none__';
+
+const emptyForm: PositionFormState = {
+  title: '',
+  code: '',
+  description: '',
+  departmentId: NONE,
 };
 
 export default function PositionsPage() {
   const { can } = useAuth();
-  const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState('');
-  const [code, setCode] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const [departments, setDepartments] = useState<DepartmentOption[]>([]);
 
-  async function onCreate(e: FormEvent) {
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<PositionRow | null>(null);
+  const [form, setForm] = useState<PositionFormState>(emptyForm);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const [deleteTarget, setDeleteTarget] = useState<PositionRow | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    if (!can('departments.view')) return;
+    void apiRequest<PaginatedResult<DepartmentOption>>('/departments', {
+      query: { page: 1, pageSize: 100, isActive: true },
+    })
+      .then((data) => setDepartments(data.items))
+      .catch(() => setDepartments([]));
+  }, [can]);
+
+  function refresh() {
+    setReloadKey((k) => k + 1);
+  }
+
+  function openCreate() {
+    setEditing(null);
+    setForm(emptyForm);
+    setFormError(null);
+    setFormOpen(true);
+  }
+
+  function openEdit(position: PositionRow) {
+    setEditing(position);
+    setForm({
+      title: position.title,
+      code: position.code,
+      description: position.description ?? '',
+      departmentId: position.departmentId ?? position.department?.id ?? NONE,
+    });
+    setFormError(null);
+    setFormOpen(true);
+  }
+
+  async function onSave(e: FormEvent) {
     e.preventDefault();
-    setError(null);
+    setSaving(true);
+    setFormError(null);
     try {
-      await apiRequest('/positions', { method: 'POST', body: { title, code } });
-      setOpen(false);
-      setTitle('');
-      setCode('');
-      setReloadKey((k) => k + 1);
+      const body = {
+        title: form.title,
+        code: form.code,
+        description: form.description || undefined,
+        departmentId: form.departmentId === NONE ? null : form.departmentId,
+      };
+      if (editing) {
+        await apiRequest(`/positions/${editing.id}`, { method: 'PATCH', body });
+      } else {
+        await apiRequest('/positions', { method: 'POST', body });
+      }
+      setFormOpen(false);
+      refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create position');
+      setFormError(err instanceof ApiClientError ? err.message : 'Failed to save position');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await apiRequest(`/positions/${deleteTarget.id}`, { method: 'DELETE' });
+      setDeleteTarget(null);
+      refresh();
+    } catch (err) {
+      setDeleteError(err instanceof ApiClientError ? err.message : 'Failed to delete position');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -55,7 +150,7 @@ export default function PositionsPage() {
         permission="positions.view"
         canCreate={can('positions.create')}
         createLabel="New position"
-        onCreate={() => setOpen(true)}
+        onCreate={openCreate}
         columns={[
           { key: 'title', header: 'Title', render: (p) => p.title },
           {
@@ -70,32 +165,106 @@ export default function PositionsPage() {
           },
           { key: 'employees', header: 'Employees', render: (p) => p.employeeCount },
         ]}
+        actions={(position) => (
+          <RowActions
+            actions={[
+              ...(can('positions.update')
+                ? [{ label: 'Edit', onClick: () => openEdit(position) }]
+                : []),
+              ...(can('positions.delete')
+                ? [
+                    {
+                      label: 'Delete',
+                      variant: 'destructive' as const,
+                      onClick: () => {
+                        setDeleteError(null);
+                        setDeleteTarget(position);
+                      },
+                    },
+                  ]
+                : []),
+            ]}
+          />
+        )}
       />
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+      <Dialog open={formOpen} onOpenChange={setFormOpen}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Create position</DialogTitle>
+            <DialogTitle>{editing ? 'Edit position' : 'Create position'}</DialogTitle>
           </DialogHeader>
-          <form className="space-y-3" onSubmit={onCreate}>
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          <form className="space-y-3" onSubmit={onSave}>
+            {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
             <div className="space-y-1.5">
               <Label htmlFor="title">Title</Label>
-              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+              <Input
+                id="title"
+                value={form.title}
+                onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+                required
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="code">Code</Label>
-              <Input id="code" value={code} onChange={(e) => setCode(e.target.value)} required />
+              <Input
+                id="code"
+                value={form.code}
+                onChange={(e) => setForm((prev) => ({ ...prev, code: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                value={form.description}
+                onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Department</Label>
+              <Select
+                value={form.departmentId}
+                onValueChange={(value) =>
+                  setForm((prev) => ({ ...prev, departmentId: value ?? NONE }))
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE}>No department</SelectItem>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit">Create</Button>
+              <Button type="submit" disabled={saving}>
+                {saving ? 'Saving…' : editing ? 'Save' : 'Create'}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        title="Delete position"
+        description={`Delete position "${deleteTarget?.title ?? ''}"? Positions with employees cannot be deleted.`}
+        loading={deleting}
+        error={deleteError}
+        onConfirm={onDelete}
+      />
     </>
   );
 }

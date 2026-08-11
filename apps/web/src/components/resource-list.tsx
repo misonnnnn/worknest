@@ -33,7 +33,9 @@ type ResourceListProps<T> = {
   onCreate?: () => void;
   canCreate?: boolean;
   filters?: React.ReactNode;
-  queryExtras?: Record<string, string | number | undefined>;
+  queryExtras?: Record<string, string | number | boolean | undefined>;
+  actions?: (item: T) => React.ReactNode;
+  pageSize?: number;
 };
 
 export function ResourceListPage<T extends { id: string }>({
@@ -47,6 +49,8 @@ export function ResourceListPage<T extends { id: string }>({
   canCreate,
   filters,
   queryExtras,
+  actions,
+  pageSize = 10,
 }: ResourceListProps<T>) {
   const { can } = useAuth();
   const [search, setSearch] = useState('');
@@ -65,7 +69,7 @@ export function ResourceListPage<T extends { id: string }>({
     setError(null);
     try {
       const result = await apiRequest<PaginatedResult<T>>(endpoint, {
-        query: { page, pageSize: 10, search, ...queryExtras },
+        query: { page, pageSize, search, ...queryExtras },
       });
       setData(result);
     } catch (err) {
@@ -73,7 +77,7 @@ export function ResourceListPage<T extends { id: string }>({
     } finally {
       setLoading(false);
     }
-  }, [can, permission, endpoint, page, search, queryExtras]);
+  }, [can, permission, endpoint, page, pageSize, search, queryExtras]);
 
   useEffect(() => {
     void load();
@@ -141,6 +145,11 @@ export function ResourceListPage<T extends { id: string }>({
                       {col.header}
                     </TableHead>
                   ))}
+                  {actions ? (
+                    <TableHead className="h-9 w-[1%] text-right text-xs font-medium">
+                      Actions
+                    </TableHead>
+                  ) : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -151,6 +160,9 @@ export function ResourceListPage<T extends { id: string }>({
                         {col.render(item)}
                       </TableCell>
                     ))}
+                    {actions ? (
+                      <TableCell className="py-2.5 text-right">{actions(item)}</TableCell>
+                    ) : null}
                   </TableRow>
                 ))}
               </TableBody>

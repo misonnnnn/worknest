@@ -98,7 +98,17 @@ Login with the seeded admin (`ADMIN_EMAIL` / `ADMIN_PASSWORD`).
 - Departments, Positions, Employees
 - Audit logs
 
-**Not in Phase 1:** inventory, purchasing, sales, invoices, payments, accounting.
+## Phase 2 — Admin CRUD
+
+Complete admin UI for foundation modules:
+
+- Create / edit / delete for users, roles, departments, positions, employees
+- Assign roles to users
+- Assign permissions to roles
+- Permissions remain a read-only catalog (assign via roles)
+- Delete guards (self-delete, Super Admin role, departments/positions in use)
+
+**Not in Phase 2:** inventory, purchasing, sales, invoices, payments, accounting.
 
 ## RBAC
 

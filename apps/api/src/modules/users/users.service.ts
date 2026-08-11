@@ -1,6 +1,6 @@
 import { prisma } from '../../lib/prisma';
 import { hashPassword } from '../../lib/password';
-import { conflict, notFound } from '../../lib/errors';
+import { badRequest, conflict, notFound } from '../../lib/errors';
 import { writeAuditLog } from '../../lib/audit';
 import { buildPagination } from '../../utils/helpers';
 
@@ -171,6 +171,10 @@ export const usersService = {
     actorId: string,
     meta: { ipAddress?: string | null; userAgent?: string | null },
   ) {
+    if (id === actorId) {
+      throw badRequest('You cannot delete your own account');
+    }
+
     const existing = await prisma.user.findUnique({ where: { id }, select: userSelect });
     if (!existing) throw notFound('User not found');
 

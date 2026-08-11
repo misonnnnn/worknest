@@ -146,8 +146,21 @@ export const departmentsService = {
     actorId: string,
     meta: { ipAddress?: string | null; userAgent?: string | null },
   ) {
-    const existing = await prisma.department.findUnique({ where: { id } });
+    const existing = await prisma.department.findUnique({
+      where: { id },
+      include: { _count: { select: { employees: true, positions: true } } },
+    });
     if (!existing) throw notFound('Department not found');
+    if (existing._count.employees > 0 || existing._count.positions > 0) {
+      throw conflict(
+        'Cannot delete a department that still has employees or positions. Reassign them first.',
+        {
+          employeeCount: existing._count.employees,
+          positionCount: existing._count.positions,
+        },
+      );
+    }
+
     await prisma.department.delete({ where: { id } });
     await writeAuditLog({
       userId: actorId,
