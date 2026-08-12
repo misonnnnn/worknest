@@ -13,7 +13,7 @@ import {
   Building,
   FolderOpen,
   Package,
-  Keyboard,
+  Gamepad2,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -47,6 +47,7 @@ type NavLink = {
   title: string;
   href: string;
   permission?: string;
+  children?: NavLink[];
 };
 
 type NavSection = {
@@ -87,12 +88,20 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: 'Training',
-    icon: Keyboard,
+    // Room for more games later (e.g. Memory Match, Quiz)
+    title: 'Games',
+    icon: Gamepad2,
     items: [
-      { title: 'Typing Test', href: '/typing-test', permission: 'typing-tests.view' },
-      { title: 'Leaderboard', href: '/typing-test/leaderboard', permission: 'typing-tests.view' },
-      { title: 'My Statistics', href: '/typing-test/statistics', permission: 'typing-tests.view' },
+      {
+        title: 'Typing Test',
+        href: '/typing-test',
+        permission: 'typing-tests.view',
+        children: [
+          { title: 'Play', href: '/typing-test', permission: 'typing-tests.view' },
+          { title: 'Leaderboard', href: '/typing-test/leaderboard', permission: 'typing-tests.view' },
+          { title: 'My Statistics', href: '/typing-test/statistics', permission: 'typing-tests.view' },
+        ],
+      },
     ],
   },
 ];
@@ -101,8 +110,33 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function isExactPath(pathname: string, href: string) {
+  return pathname === href;
+}
+
+function itemIsActive(pathname: string, item: NavLink): boolean {
+  if (item.children?.length) {
+    return item.children.some((child) => isActivePath(pathname, child.href));
+  }
+  return isActivePath(pathname, item.href);
+}
+
 function sectionHasActiveItem(pathname: string, items: NavLink[]) {
-  return items.some((item) => isActivePath(pathname, item.href));
+  return items.some((item) => itemIsActive(pathname, item));
+}
+
+function filterNavItems(items: NavLink[], can: (p: string) => boolean): NavLink[] {
+  return items
+    .map((item) => {
+      if (item.permission && !can(item.permission)) return null;
+      if (item.children?.length) {
+        const children = filterNavItems(item.children, can);
+        if (children.length === 0) return null;
+        return { ...item, children };
+      }
+      return item;
+    })
+    .filter((item): item is NavLink => item !== null);
 }
 
 function OrgSwitcher() {
@@ -211,13 +245,64 @@ function NavUser() {
   );
 }
 
+function NestedNavItem({ item, pathname }: { item: NavLink; pathname: string }) {
+  const hasChildren = Boolean(item.children?.length);
+  const open = itemIsActive(pathname, item);
+
+  if (!hasChildren) {
+    return (
+      <SidebarMenuSubItem>
+        <SidebarMenuSubButton asChild isActive={isActivePath(pathname, item.href)}>
+          <Link href={item.href}>
+            <span>{item.title}</span>
+          </Link>
+        </SidebarMenuSubButton>
+      </SidebarMenuSubItem>
+    );
+  }
+
+  return (
+    <Collapsible asChild defaultOpen={open} className="group/game">
+      <SidebarMenuSubItem>
+        <CollapsibleTrigger asChild>
+          <SidebarMenuSubButton className="cursor-pointer">
+            <span>{item.title}</span>
+            <ChevronRight className="ml-auto size-3.5 transition-transform duration-200 group-data-[state=open]/game:rotate-90" />
+          </SidebarMenuSubButton>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarMenuSub className="ml-2 border-l border-sidebar-border pl-2">
+            {item.children!.map((child) => {
+              // Exact match for Play (/typing-test) so Leaderboard doesn't highlight Play too
+              const active =
+                child.href === item.href
+                  ? isExactPath(pathname, child.href)
+                  : isActivePath(pathname, child.href);
+
+              return (
+                <SidebarMenuSubItem key={child.href}>
+                  <SidebarMenuSubButton asChild isActive={active}>
+                    <Link href={child.href}>
+                      <span>{child.title}</span>
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              );
+            })}
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuSubItem>
+    </Collapsible>
+  );
+}
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const { can } = useAuth();
 
   const visibleSections = NAV_SECTIONS.map((section) => ({
     ...section,
-    items: section.items.filter((item) => !item.permission || can(item.permission)),
+    items: filterNavItems(section.items, can),
   })).filter((section) => section.items.length > 0);
 
   const showAuditLogs = can('audit-logs.view');
@@ -271,16 +356,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       <CollapsibleContent>
                         <SidebarMenuSub>
                           {section.items.map((item) => (
-                            <SidebarMenuSubItem key={item.href}>
-                              <SidebarMenuSubButton
-                                asChild
-                                isActive={isActivePath(pathname, item.href)}
-                              >
-                                <Link href={item.href}>
-                                  <span>{item.title}</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
+                            <NestedNavItem key={item.href + item.title} item={item} pathname={pathname} />
                           ))}
                         </SidebarMenuSub>
                       </CollapsibleContent>
@@ -292,7 +368,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           );
         })}
 
-        {(showAuditLogs || showFileManager) ? (
+        {showAuditLogs || showFileManager ? (
           <SidebarGroup>
             <SidebarGroupLabel>System</SidebarGroupLabel>
             <SidebarGroupContent>

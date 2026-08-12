@@ -76,43 +76,47 @@ export function splitWords(text: string): WordSlice[] {
   return words;
 }
 
-/** Words per line and lines shown before advancing to the next page */
-export const WORDS_PER_LINE = 8;
-export const LINES_PER_CHUNK = 3;
-export const WORDS_PER_CHUNK = WORDS_PER_LINE * LINES_PER_CHUNK;
+/** How many words to show at once before advancing to the next set */
+export const WORDS_PER_CHUNK = 20;
 
-export type TextChunk = { start: number; end: number };
+export type TextChunk = {
+  /** Char index where this chunk starts in the full text */
+  start: number;
+  /** Char index where this chunk ends (after trailing space if any) */
+  end: number;
+  /** Words in this chunk */
+  words: WordSlice[];
+};
 
-/** Split full text into pages of 3 lines (8 words each) */
+/** Split full text into fixed-size word batches (e.g. 15 words each) */
 export function splitTextIntoChunks(
   text: string,
-  wordsPerLine = WORDS_PER_LINE,
-  linesPerChunk = LINES_PER_CHUNK,
+  wordsPerChunk = WORDS_PER_CHUNK,
 ): TextChunk[] {
-  const words = splitWords(text);
-  const wordsPerChunk = wordsPerLine * linesPerChunk;
+  const allWords = splitWords(text);
   const chunks: TextChunk[] = [];
 
-  for (let i = 0; i < words.length; i += wordsPerChunk) {
-    const chunkWords = words.slice(i, i + wordsPerChunk);
+  for (let i = 0; i < allWords.length; i += wordsPerChunk) {
+    const chunkWords = allWords.slice(i, i + wordsPerChunk);
     if (chunkWords.length === 0) break;
 
     const start = chunkWords[0]!.startIndex;
     const lastWord = chunkWords[chunkWords.length - 1]!;
     let end = lastWord.startIndex + lastWord.word.length;
+    // Include the space after the last word so typing it advances to the next chunk
     if (end < text.length && text[end] === ' ') end += 1;
 
-    chunks.push({ start, end });
+    chunks.push({ start, end, words: chunkWords });
   }
 
   if (chunks.length === 0 && text.length > 0) {
-    chunks.push({ start: 0, end: text.length });
+    chunks.push({ start: 0, end: text.length, words: allWords });
   }
 
   return chunks;
 }
 
-/** Which 3-line page the user is on (based on how much they have typed) */
+/** Which word-batch the user is on (advances only after finishing the current set) */
 export function getCurrentChunkIndex(chunks: TextChunk[], cursorIndex: number): number {
   if (chunks.length === 0) return 0;
 
@@ -121,24 +125,6 @@ export function getCurrentChunkIndex(chunks: TextChunk[], cursorIndex: number): 
   }
 
   return chunks.length - 1;
-}
-
-/** Group a chunk's words into exactly up to 3 lines for display */
-export function getChunkLines(
-  text: string,
-  chunk: TextChunk,
-  wordsPerLine = WORDS_PER_LINE,
-): WordSlice[][] {
-  const chunkWords = splitWords(text).filter(
-    (w) => w.startIndex >= chunk.start && w.startIndex < chunk.end,
-  );
-
-  const lines: WordSlice[][] = [];
-  for (let i = 0; i < chunkWords.length; i += wordsPerLine) {
-    lines.push(chunkWords.slice(i, i + wordsPerLine));
-  }
-
-  return lines;
 }
 
 /** Build a space-separated word string with enough words for the test */

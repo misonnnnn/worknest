@@ -133,7 +133,7 @@ npm run db:seed
 
 **Skipped for later:** AP/accounting, sales/SO, multi-level approvals, transfers between warehouses.
 
-## Typing Test (Training)
+## Typing Test (Games)
 
 Minimal typing speed game integrated into the ERP:
 

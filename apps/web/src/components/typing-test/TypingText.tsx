@@ -3,7 +3,6 @@
 import { useMemo } from 'react';
 import {
   getCharStates,
-  getChunkLines,
   getCurrentChunkIndex,
   splitTextIntoChunks,
   type WordSlice,
@@ -23,31 +22,26 @@ export function TypingText({ text, typed, className }: TypingTextProps) {
   const chunks = useMemo(() => splitTextIntoChunks(text), [text]);
   const chunkIndex = getCurrentChunkIndex(chunks, cursorIndex);
   const currentChunk = chunks[chunkIndex];
-  const lines = currentChunk ? getChunkLines(text, currentChunk) : [];
+  const visibleWords = currentChunk?.words ?? [];
 
   return (
     <div className={cn('w-full max-w-3xl', className)} aria-label="Typing test text">
-      <div className="flex min-h-[7rem] flex-col justify-center gap-3 text-2xl leading-relaxed tracking-wide sm:min-h-[8rem] sm:text-3xl">
-        {lines.map((lineWords, lineIndex) => (
-          <div key={`${chunkIndex}-${lineIndex}`} className="flex flex-wrap gap-x-[0.35em]">
-            {lineWords.map((wordSlice) => (
-              <WordBlock
-                key={wordSlice.startIndex}
-                text={text}
-                wordSlice={wordSlice}
-                cursorIndex={cursorIndex}
-                states={states}
-              />
-            ))}
-          </div>
+      <div
+        className={cn(
+          'flex min-h-[4.5rem] flex-wrap content-start justify-center gap-x-[0.35em] gap-y-2',
+          'text-2xl leading-relaxed tracking-wide sm:min-h-[5.5rem] sm:text-3xl',
+        )}
+      >
+        {visibleWords.map((wordSlice) => (
+          <WordBlock
+            key={wordSlice.startIndex}
+            text={text}
+            wordSlice={wordSlice}
+            cursorIndex={cursorIndex}
+            states={states}
+          />
         ))}
       </div>
-
-      {chunks.length > 1 ? (
-        <p className="mt-3 text-center text-xs text-muted-foreground">
-          Part {chunkIndex + 1} of {chunks.length}
-        </p>
-      ) : null}
     </div>
   );
 }
