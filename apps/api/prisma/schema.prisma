@@ -185,3 +185,36 @@ model RefreshToken {
   @@index([expiresAt])
   @@map("refresh_tokens")
 }
+
+model MediaFolder {
+  id        String        @id @default(uuid()) @db.Uuid
+  name      String
+  parentId  String?       @db.Uuid
+  sortOrder Int           @default(0)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  parent    MediaFolder?  @relation("MediaFolderTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children  MediaFolder[] @relation("MediaFolderTree")
+  files     MediaFile[]
+
+  @@index([parentId])
+  @@map("media_folders")
+}
+
+model MediaFile {
+  id         String       @id @default(uuid()) @db.Uuid
+  name       String
+  folderId   String?      @db.Uuid
+  storageKey String
+  url        String
+  mimeType   String
+  size       Int
+  alt        String?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  folder     MediaFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+
+  @@index([folderId])
+  @@index([storageKey])
+  @@map("media_files")
+}

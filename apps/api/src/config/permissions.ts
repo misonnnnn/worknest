@@ -88,6 +88,10 @@ export const PERMISSIONS = [
     action: 'view',
     description: 'View audit logs',
   },
+  { key: 'media.view', resource: 'media', action: 'view', description: 'View media library' },
+  { key: 'media.create', resource: 'media', action: 'create', description: 'Upload and create media' },
+  { key: 'media.update', resource: 'media', action: 'update', description: 'Update and move media' },
+  { key: 'media.delete', resource: 'media', action: 'delete', description: 'Delete media' },
 ] as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[number]['key'];

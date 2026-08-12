@@ -11,6 +11,7 @@ import {
   Layers,
   ShieldCheck,
   Building,
+  FolderOpen,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -197,6 +198,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   })).filter((section) => section.items.length > 0);
 
   const showAuditLogs = can('audit-logs.view');
+  const showFileManager = can('media.view');
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -267,23 +269,39 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           );
         })}
 
-        {showAuditLogs ? (
+        {(showAuditLogs || showFileManager) ? (
           <SidebarGroup>
             <SidebarGroupLabel>System</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActivePath(pathname, '/audit-logs')}
-                    tooltip="Audit Logs"
-                  >
-                    <Link href="/audit-logs">
-                      <ScrollText />
-                      <span>Audit Logs</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                {showFileManager ? (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActivePath(pathname, '/file-manager')}
+                      tooltip="File Manager"
+                    >
+                      <Link href="/file-manager">
+                        <FolderOpen />
+                        <span>File Manager</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ) : null}
+                {showAuditLogs ? (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActivePath(pathname, '/audit-logs')}
+                      tooltip="Audit Logs"
+                    >
+                      <Link href="/audit-logs">
+                        <ScrollText />
+                        <span>Audit Logs</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ) : null}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

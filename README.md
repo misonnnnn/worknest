@@ -110,6 +110,19 @@ Complete admin UI for foundation modules:
 
 **Not in Phase 2:** inventory, purchasing, sales, invoices, payments, accounting.
 
+## File Manager
+
+Media library at `/file-manager` with nested folders, image uploads, search, copy/cut/paste, and RBAC (`media.view`, `media.create`, `media.update`, `media.delete`).
+
+After pulling, run:
+
+```bash
+npm run db:migrate:dev -- --name media_library
+npm run db:seed
+```
+
+Set `UPLOAD_DIR` and `MEDIA_PUBLIC_BASE_URL` in `.env` (see `.env.example`).
+
 ## RBAC
 
 Permissions use `resource.action` keys (for example `employees.view`, `roles.assign`).

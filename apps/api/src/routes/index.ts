@@ -7,6 +7,7 @@ import departmentsRoutes from '../modules/departments/departments.routes';
 import positionsRoutes from '../modules/positions/positions.routes';
 import employeesRoutes from '../modules/employees/employees.routes';
 import auditLogsRoutes from '../modules/audit-logs/audit-logs.routes';
+import mediaRoutes from '../modules/media/media.routes';
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use('/departments', departmentsRoutes);
 router.use('/positions', positionsRoutes);
 router.use('/employees', employeesRoutes);
 router.use('/audit-logs', auditLogsRoutes);
+router.use('/media', mediaRoutes);
 
 export default router;

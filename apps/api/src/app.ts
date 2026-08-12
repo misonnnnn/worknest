@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import swaggerUi from 'swagger-ui-express';
 import { env } from './config/env';
+import { getUploadDir } from './modules/media/media.storage';
 import { swaggerSpec } from './config/swagger';
 import apiRoutes from './routes';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
@@ -11,7 +12,11 @@ import { errorHandler, notFoundHandler } from './middleware/error-handler';
 export function createApp() {
   const app = express();
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
   app.use(
     cors({
       origin: env.CORS_ORIGIN,
@@ -20,6 +25,8 @@ export function createApp() {
   );
   app.use(express.json({ limit: '1mb' }));
   app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+
+  app.use('/uploads', express.static(getUploadDir()));
 
   app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
   app.get('/api/docs.json', (_req, res) => res.json(swaggerSpec));

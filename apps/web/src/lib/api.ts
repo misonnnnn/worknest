@@ -149,6 +149,53 @@ export async function fetchMe() {
   return apiRequest<AuthUser>('/auth/me');
 }
 
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api').replace(
+  /\/api\/?$/,
+  '',
+);
+
+export async function apiUpload<T>(
+  path: string,
+  formData: FormData,
+): Promise<T> {
+  const token = getAccessToken();
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  let res = await fetch(`${API_BASE}/api${path}`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+
+  if (res.status === 401 && token) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      headers.Authorization = `Bearer ${newToken}`;
+      res = await fetch(`${API_BASE}/api${path}`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+    }
+  }
+
+  const json = (await res.json()) as ApiResponse<T>;
+  if (!res.ok || !json.success) {
+    const error = !json.success
+      ? json.error
+      : { code: 'REQUEST_FAILED', message: 'Upload failed', details: undefined };
+    throw new ApiClientError(res.status, error.code, error.message, error.details);
+  }
+
+  return json.data;
+}
+
+export function mediaUrl(url: string) {
+  if (url.startsWith('http')) return url;
+  return `${API_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
+}
+
 export function hasPermission(user: AuthUser | null | undefined, permission: string) {
   return Boolean(user?.permissions.includes(permission));
 }

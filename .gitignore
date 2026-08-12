@@ -43,6 +43,10 @@ coverage/
 apps/api/prisma/*.db
 apps/api/prisma/*.db-journal
 
+# Uploads
+uploads/
+apps/api/uploads/
+
 # Misc
 *.pem
 .vercel
