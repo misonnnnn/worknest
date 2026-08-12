@@ -13,6 +13,7 @@ import {
   Building,
   FolderOpen,
   Package,
+  Keyboard,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -83,6 +84,15 @@ const NAV_SECTIONS: NavSection[] = [
       { title: 'Inventory', href: '/inventory', permission: 'inventory.view' },
       { title: 'Requisitions', href: '/purchase-requisitions', permission: 'requisitions.view' },
       { title: 'Purchase Orders', href: '/purchase-orders', permission: 'purchasing.view' },
+    ],
+  },
+  {
+    title: 'Training',
+    icon: Keyboard,
+    items: [
+      { title: 'Typing Test', href: '/typing-test', permission: 'typing-tests.view' },
+      { title: 'Leaderboard', href: '/typing-test/leaderboard', permission: 'typing-tests.view' },
+      { title: 'My Statistics', href: '/typing-test/statistics', permission: 'typing-tests.view' },
     ],
   },
 ];

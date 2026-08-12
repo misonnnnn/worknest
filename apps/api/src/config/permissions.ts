@@ -134,6 +134,18 @@ export const PERMISSIONS = [
     action: 'approve',
     description: 'Approve or reject purchase requisitions',
   },
+  {
+    key: 'typing-tests.view',
+    resource: 'typing-tests',
+    action: 'view',
+    description: 'Access typing test, leaderboard, and statistics',
+  },
+  {
+    key: 'typing-tests.play',
+    resource: 'typing-tests',
+    action: 'play',
+    description: 'Submit typing test results',
+  },
 ] as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[number]['key'];

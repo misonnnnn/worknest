@@ -133,6 +133,27 @@ npm run db:seed
 
 **Skipped for later:** AP/accounting, sales/SO, multi-level approvals, transfers between warehouses.
 
+## Typing Test (Training)
+
+Minimal typing speed game integrated into the ERP:
+
+- **Typing Test** — time (15/30/60/120s) or word (25/50/100) modes, virtual keyboard
+- **Leaderboard** — global / weekly / monthly with filters
+- **My Statistics** — personal bests, averages, recent tests
+
+Flow: client-side typing → submit final result only → PostgreSQL via `/api/typing-tests/*`
+
+Permissions: `typing-tests.view`, `typing-tests.play`
+
+After pulling:
+
+```bash
+npx prisma migrate deploy
+npm run db:seed
+```
+
+Log out/in to refresh permissions.
+
 ## File Manager
 
 Media library at `/file-manager` with nested folders, image uploads, search, copy/cut/paste, and RBAC (`media.view`, `media.create`, `media.update`, `media.delete`).

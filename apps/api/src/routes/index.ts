@@ -14,6 +14,7 @@ import warehousesRoutes from '../modules/warehouses/warehouses.routes';
 import inventoryRoutes from '../modules/inventory/inventory.routes';
 import purchasingRoutes from '../modules/purchasing/purchasing.routes';
 import requisitionsRoutes from '../modules/requisitions/requisitions.routes';
+import typingTestsRoutes from '../modules/typing-tests/typing-tests.routes';
 
 const router = Router();
 
@@ -36,5 +37,6 @@ router.use('/warehouses', warehousesRoutes);
 router.use('/inventory', inventoryRoutes);
 router.use('/purchase-requisitions', requisitionsRoutes);
 router.use('/purchase-orders', purchasingRoutes);
+router.use('/typing-tests', typingTestsRoutes);
 
 export default router;
