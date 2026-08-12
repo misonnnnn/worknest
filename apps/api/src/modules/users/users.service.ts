@@ -27,6 +27,28 @@ const userSelect = {
   },
 } as const;
 
+async function syncEmployeeLink(userId: string, employeeId: string | null | undefined) {
+  if (employeeId === undefined) return;
+
+  await prisma.employee.updateMany({
+    where: { userId },
+    data: { userId: null },
+  });
+
+  if (!employeeId) return;
+
+  const employee = await prisma.employee.findUnique({ where: { id: employeeId } });
+  if (!employee) throw notFound('Employee not found');
+  if (employee.userId && employee.userId !== userId) {
+    throw conflict('Employee is already linked to another user');
+  }
+
+  await prisma.employee.update({
+    where: { id: employeeId },
+    data: { userId },
+  });
+}
+
 function mapUser(user: {
   id: string;
   email: string;
@@ -82,7 +104,13 @@ export const usersService = {
   },
 
   async create(
-    input: { email: string; password: string; isActive?: boolean; roleIds?: string[] },
+    input: {
+      email: string;
+      password: string;
+      isActive?: boolean;
+      roleIds?: string[];
+      employeeId?: string | null;
+    },
     actorId: string,
     meta: { ipAddress?: string | null; userAgent?: string | null },
   ) {
@@ -108,22 +136,29 @@ export const usersService = {
       select: userSelect,
     });
 
+    await syncEmployeeLink(user.id, input.employeeId);
+
     await writeAuditLog({
       userId: actorId,
       action: 'CREATE',
       resource: 'users',
       resourceId: user.id,
-      newValues: { email: user.email, isActive: user.isActive, roleIds: input.roleIds },
+      newValues: {
+        email: user.email,
+        isActive: user.isActive,
+        roleIds: input.roleIds,
+        employeeId: input.employeeId,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
 
-    return mapUser(user);
+    return this.getById(user.id);
   },
 
   async update(
     id: string,
-    input: { email?: string; password?: string; isActive?: boolean },
+    input: { email?: string; password?: string; isActive?: boolean; employeeId?: string | null },
     actorId: string,
     meta: { ipAddress?: string | null; userAgent?: string | null },
   ) {
@@ -148,22 +183,31 @@ export const usersService = {
       select: userSelect,
     });
 
+    if (input.employeeId !== undefined) {
+      await syncEmployeeLink(id, input.employeeId);
+    }
+
     await writeAuditLog({
       userId: actorId,
       action: 'UPDATE',
       resource: 'users',
       resourceId: id,
-      oldValues: { email: existing.email, isActive: existing.isActive },
+      oldValues: {
+        email: existing.email,
+        isActive: existing.isActive,
+        employeeId: existing.employee?.id ?? null,
+      },
       newValues: {
         email: user.email,
         isActive: user.isActive,
         passwordChanged: Boolean(input.password),
+        employeeId: input.employeeId,
       },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
 
-    return mapUser(user);
+    return this.getById(id);
   },
 
   async remove(

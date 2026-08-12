@@ -37,6 +37,7 @@ const EMPLOYMENT_STATUSES: EmploymentStatus[] = [
 
 type DepartmentOption = { id: string; name: string };
 type PositionOption = { id: string; title: string };
+type UserOption = { id: string; email: string; employee: { id: string } | null };
 type ManagerOption = {
   id: string;
   firstName: string;
@@ -58,9 +59,11 @@ type EmployeeRow = {
   departmentId: string | null;
   positionId: string | null;
   managerId: string | null;
+  userId: string | null;
   department: { id: string; name: string } | null;
   position: { id: string; title: string } | null;
   manager: { id: string; firstName: string; lastName: string; employeeNumber: string } | null;
+  user: { id: string; email: string } | null;
 };
 
 type EmployeeFormState = {
@@ -76,6 +79,7 @@ type EmployeeFormState = {
   departmentId: string;
   positionId: string;
   managerId: string;
+  userId: string;
 };
 
 const emptyForm: EmployeeFormState = {
@@ -91,6 +95,7 @@ const emptyForm: EmployeeFormState = {
   departmentId: NONE,
   positionId: NONE,
   managerId: NONE,
+  userId: NONE,
 };
 
 function toDateInput(value: string | null | undefined) {
@@ -104,6 +109,8 @@ export default function EmployeesPage() {
   const [departments, setDepartments] = useState<DepartmentOption[]>([]);
   const [positions, setPositions] = useState<PositionOption[]>([]);
   const [managers, setManagers] = useState<ManagerOption[]>([]);
+  const [users, setUsers] = useState<UserOption[]>([]);
+  const [viewing, setViewing] = useState<EmployeeRow | null>(null);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<EmployeeRow | null>(null);
@@ -118,7 +125,7 @@ export default function EmployeesPage() {
   useEffect(() => {
     async function loadOptions() {
       try {
-        const [deptData, positionData, employeeData] = await Promise.all([
+        const [deptData, positionData, employeeData, userData] = await Promise.all([
           can('departments.view')
             ? apiRequest<PaginatedResult<DepartmentOption>>('/departments', {
                 query: { page: 1, pageSize: 100, isActive: true },
@@ -132,14 +139,21 @@ export default function EmployeesPage() {
           apiRequest<PaginatedResult<ManagerOption>>('/employees', {
             query: { page: 1, pageSize: 100, employmentStatus: 'ACTIVE' },
           }),
+          can('users.view')
+            ? apiRequest<PaginatedResult<UserOption>>('/users', {
+                query: { page: 1, pageSize: 100 },
+              })
+            : Promise.resolve({ items: [] as UserOption[] }),
         ]);
         setDepartments(deptData.items);
         setPositions(positionData.items);
         setManagers(employeeData.items);
+        setUsers(userData.items);
       } catch {
         setDepartments([]);
         setPositions([]);
         setManagers([]);
+        setUsers([]);
       }
     }
     void loadOptions();
@@ -171,6 +185,7 @@ export default function EmployeesPage() {
       departmentId: employee.departmentId ?? employee.department?.id ?? NONE,
       positionId: employee.positionId ?? employee.position?.id ?? NONE,
       managerId: employee.managerId ?? employee.manager?.id ?? NONE,
+      userId: employee.userId ?? employee.user?.id ?? NONE,
     });
     setFormError(null);
     setFormOpen(true);
@@ -194,6 +209,7 @@ export default function EmployeesPage() {
         departmentId: form.departmentId === NONE ? null : form.departmentId,
         positionId: form.positionId === NONE ? null : form.positionId,
         managerId: form.managerId === NONE ? null : form.managerId,
+        userId: form.userId === NONE ? null : form.userId,
       };
       if (editing) {
         await apiRequest(`/employees/${editing.id}`, { method: 'PATCH', body });
@@ -266,10 +282,16 @@ export default function EmployeesPage() {
               </Badge>
             ),
           },
+          {
+            key: 'user',
+            header: 'Login',
+            render: (e) => e.user?.email || '—',
+          },
         ]}
         actions={(employee) => (
           <RowActions
             actions={[
+              { label: 'View', onClick: () => setViewing(employee) },
               ...(can('employees.update')
                 ? [{ label: 'Edit', onClick: () => openEdit(employee) }]
                 : []),
@@ -476,6 +498,34 @@ export default function EmployeesPage() {
               </Select>
             </div>
 
+            {can('users.view') ? (
+              <div className="space-y-1.5">
+                <Label>Linked user account</Label>
+                <Select
+                  value={form.userId}
+                  onValueChange={(value) =>
+                    setForm((prev) => ({ ...prev, userId: value ?? NONE }))
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select user" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE}>No login account</SelectItem>
+                    {users
+                      .filter(
+                        (user) => !user.employee || user.employee.id === editing?.id,
+                      )
+                      .map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.email}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
+
             <DialogFooter className="pt-2">
               <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>
                 Cancel
@@ -485,6 +535,93 @@ export default function EmployeesPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(viewing)} onOpenChange={(open) => !open && setViewing(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {viewing ? `${viewing.firstName} ${viewing.lastName}` : 'Employee'}
+            </DialogTitle>
+          </DialogHeader>
+          {viewing ? (
+            <dl className="grid gap-3 text-sm sm:grid-cols-2">
+              <div>
+                <dt className="text-muted-foreground">Employee #</dt>
+                <dd className="mono font-medium">{viewing.employeeNumber}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Status</dt>
+                <dd>
+                  <Badge variant="secondary" className="rounded-md font-normal">
+                    {viewing.employmentStatus}
+                  </Badge>
+                </dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-muted-foreground">Name</dt>
+                <dd className="font-medium">
+                  {[viewing.firstName, viewing.middleName, viewing.lastName]
+                    .filter(Boolean)
+                    .join(' ')}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Email</dt>
+                <dd>{viewing.email}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Phone</dt>
+                <dd>{viewing.phone || '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Date of birth</dt>
+                <dd>{viewing.dateOfBirth ? toDateInput(viewing.dateOfBirth) : '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Hire date</dt>
+                <dd>{toDateInput(viewing.hireDate) || '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Department</dt>
+                <dd>{viewing.department?.name || '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Position</dt>
+                <dd>{viewing.position?.title || '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Manager</dt>
+                <dd>
+                  {viewing.manager
+                    ? `${viewing.manager.firstName} ${viewing.manager.lastName}`
+                    : '—'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Login account</dt>
+                <dd>{viewing.user?.email || 'Not linked'}</dd>
+              </div>
+            </dl>
+          ) : null}
+          <DialogFooter>
+            {viewing && can('employees.update') ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  openEdit(viewing);
+                  setViewing(null);
+                }}
+              >
+                Edit
+              </Button>
+            ) : null}
+            <Button type="button" onClick={() => setViewing(null)}>
+              Close
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

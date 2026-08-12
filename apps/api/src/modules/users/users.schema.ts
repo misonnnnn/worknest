@@ -17,12 +17,14 @@ export const createUserSchema = z.object({
   password: z.string().min(8),
   isActive: z.boolean().optional().default(true),
   roleIds: z.array(z.string().uuid()).optional().default([]),
+  employeeId: z.string().uuid().nullable().optional(),
 });
 
 export const updateUserSchema = z.object({
   email: z.string().email().optional(),
   password: z.string().min(8).optional(),
   isActive: z.boolean().optional(),
+  employeeId: z.string().uuid().nullable().optional(),
 });
 
 export const assignRolesSchema = z.object({

@@ -18,8 +18,25 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+const NONE = '__none__';
 
 type RoleOption = { id: string; name: string };
+
+type EmployeeOption = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  employeeNumber: string;
+  user: { id: string } | null;
+};
 
 type UserRow = {
   id: string;
@@ -27,24 +44,28 @@ type UserRow = {
   isActive: boolean;
   roles: RoleOption[];
   lastLoginAt: string | null;
+  employee: { id: string; firstName: string; lastName: string; employeeNumber: string } | null;
 };
 
 type UserFormState = {
   email: string;
   password: string;
   isActive: boolean;
+  employeeId: string;
 };
 
 const emptyForm: UserFormState = {
   email: '',
   password: '',
   isActive: true,
+  employeeId: NONE,
 };
 
 export default function UsersPage() {
   const { can, user: me } = useAuth();
   const [reloadKey, setReloadKey] = useState(0);
   const [roles, setRoles] = useState<RoleOption[]>([]);
+  const [employees, setEmployees] = useState<EmployeeOption[]>([]);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<UserRow | null>(null);
@@ -71,6 +92,15 @@ export default function UsersPage() {
       .catch(() => setRoles([]));
   }, [can]);
 
+  useEffect(() => {
+    if (!can('employees.view')) return;
+    void apiRequest<PaginatedResult<EmployeeOption>>('/employees', {
+      query: { page: 1, pageSize: 100 },
+    })
+      .then((data) => setEmployees(data.items))
+      .catch(() => setEmployees([]));
+  }, [can, reloadKey]);
+
   function refresh() {
     setReloadKey((k) => k + 1);
   }
@@ -84,7 +114,12 @@ export default function UsersPage() {
 
   function openEdit(user: UserRow) {
     setEditing(user);
-    setForm({ email: user.email, password: '', isActive: user.isActive });
+    setForm({
+      email: user.email,
+      password: '',
+      isActive: user.isActive,
+      employeeId: user.employee?.id ?? NONE,
+    });
     setFormError(null);
     setFormOpen(true);
   }
@@ -102,9 +137,15 @@ export default function UsersPage() {
     setFormError(null);
     try {
       if (editing) {
-        const body: { email: string; isActive: boolean; password?: string } = {
+        const body: {
+          email: string;
+          isActive: boolean;
+          password?: string;
+          employeeId: string | null;
+        } = {
           email: form.email,
           isActive: form.isActive,
+          employeeId: form.employeeId === NONE ? null : form.employeeId,
         };
         if (form.password.trim()) body.password = form.password;
         await apiRequest(`/users/${editing.id}`, { method: 'PATCH', body });
@@ -115,6 +156,7 @@ export default function UsersPage() {
             email: form.email,
             password: form.password,
             isActive: form.isActive,
+            employeeId: form.employeeId === NONE ? null : form.employeeId,
           },
         });
       }
@@ -173,6 +215,14 @@ export default function UsersPage() {
         onCreate={openCreate}
         columns={[
           { key: 'email', header: 'Email', render: (u) => u.email },
+          {
+            key: 'employee',
+            header: 'Employee',
+            render: (u) =>
+              u.employee
+                ? `${u.employee.firstName} ${u.employee.lastName} (${u.employee.employeeNumber})`
+                : '—',
+          },
           {
             key: 'roles',
             header: 'Roles',
@@ -252,6 +302,34 @@ export default function UsersPage() {
               />
               Active account
             </label>
+            {can('employees.view') ? (
+              <div className="space-y-1.5">
+                <Label>Linked employee</Label>
+                <Select
+                  value={form.employeeId}
+                  onValueChange={(value) =>
+                    setForm((prev) => ({ ...prev, employeeId: value ?? NONE }))
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select employee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE}>No employee</SelectItem>
+                    {employees
+                      .filter(
+                        (employee) =>
+                          !employee.user || employee.user.id === editing?.id,
+                      )
+                      .map((employee) => (
+                        <SelectItem key={employee.id} value={employee.id}>
+                          {employee.firstName} {employee.lastName} ({employee.employeeNumber})
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
             <DialogFooter className="pt-2">
               <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>
                 Cancel
