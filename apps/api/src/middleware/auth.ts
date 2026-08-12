@@ -96,6 +96,22 @@ export function requirePermission(...required: string[]) {
   };
 }
 
+export function requireSelfEmployeeOrPermission(permission: string) {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return next(unauthorized());
+    }
+
+    const employeeId = req.params.id;
+    const isOwnEmployee = Boolean(employeeId && req.user.employee?.id === employeeId);
+    if (isOwnEmployee || req.user.permissions.includes(permission)) {
+      return next();
+    }
+
+    return next(forbidden('You can only update your own employee photo'));
+  };
+}
+
 export function requireAnyPermission(...required: string[]) {
   return (req: Request, _res: Response, next: NextFunction) => {
     if (!req.user) {

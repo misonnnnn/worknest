@@ -1,12 +1,13 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import type { EmploymentStatus, PaginatedResult } from '@worknest/types';
 import { ResourceListPage } from '@/components/resource-list';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { RowActions } from '@/components/row-actions';
 import { useAuth } from '@/components/auth-provider';
-import { apiRequest, ApiClientError } from '@/lib/api';
+import { apiRequest, apiUpload, ApiClientError, mediaUrl } from '@/lib/api';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -60,6 +61,7 @@ type EmployeeRow = {
   positionId: string | null;
   managerId: string | null;
   userId: string | null;
+  photoUrl: string | null;
   department: { id: string; name: string } | null;
   position: { id: string; title: string } | null;
   manager: { id: string; firstName: string; lastName: string; employeeNumber: string } | null;
@@ -104,7 +106,10 @@ function toDateInput(value: string | null | undefined) {
 }
 
 export default function EmployeesPage() {
-  const { can } = useAuth();
+  const { can, user: me } = useAuth();
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [photoSaving, setPhotoSaving] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [departments, setDepartments] = useState<DepartmentOption[]>([]);
   const [positions, setPositions] = useState<PositionOption[]>([]);
@@ -222,6 +227,44 @@ export default function EmployeesPage() {
       setFormError(err instanceof ApiClientError ? err.message : 'Failed to save employee');
     } finally {
       setSaving(false);
+    }
+  }
+
+  function canManagePhoto(employee: EmployeeRow) {
+    return me?.employee?.id === employee.id || can('employees.update');
+  }
+
+  async function onUploadPhoto(file: File) {
+    if (!viewing) return;
+    setPhotoSaving(true);
+    setPhotoError(null);
+    try {
+      const formData = new FormData();
+      formData.append('photo', file);
+      const updated = await apiUpload<EmployeeRow>(`/employees/${viewing.id}/photo`, formData);
+      setViewing(updated);
+      refresh();
+    } catch (err) {
+      setPhotoError(err instanceof ApiClientError ? err.message : 'Failed to upload photo');
+    } finally {
+      setPhotoSaving(false);
+    }
+  }
+
+  async function onRemovePhoto() {
+    if (!viewing) return;
+    setPhotoSaving(true);
+    setPhotoError(null);
+    try {
+      const updated = await apiRequest<EmployeeRow>(`/employees/${viewing.id}/photo`, {
+        method: 'DELETE',
+      });
+      setViewing(updated);
+      refresh();
+    } catch (err) {
+      setPhotoError(err instanceof ApiClientError ? err.message : 'Failed to remove photo');
+    } finally {
+      setPhotoSaving(false);
     }
   }
 
@@ -538,7 +581,15 @@ export default function EmployeesPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={Boolean(viewing)} onOpenChange={(open) => !open && setViewing(null)}>
+      <Dialog
+        open={Boolean(viewing)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setViewing(null);
+            setPhotoError(null);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
@@ -546,6 +597,64 @@ export default function EmployeesPage() {
             </DialogTitle>
           </DialogHeader>
           {viewing ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <Avatar className="size-16 rounded-lg">
+                  {viewing.photoUrl ? (
+                    <AvatarImage src={mediaUrl(viewing.photoUrl)} alt={viewing.firstName} />
+                  ) : null}
+                  <AvatarFallback className="rounded-lg text-base">
+                    {`${viewing.firstName[0] ?? ''}${viewing.lastName[0] ?? ''}`.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                {canManagePhoto(viewing) ? (
+                  <div className="space-y-1.5">
+                    <p className="text-sm font-medium">Display picture</p>
+                    <div className="flex flex-wrap gap-2">
+                      <input
+                        ref={photoInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) void onUploadPhoto(file);
+                          e.target.value = '';
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={photoSaving}
+                        onClick={() => photoInputRef.current?.click()}
+                      >
+                        {photoSaving ? 'Saving…' : viewing.photoUrl ? 'Change photo' : 'Upload photo'}
+                      </Button>
+                      {viewing.photoUrl ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="destructive"
+                          disabled={photoSaving}
+                          onClick={() => void onRemovePhoto()}
+                        >
+                          Remove
+                        </Button>
+                      ) : null}
+                    </div>
+                    {photoError ? <p className="text-xs text-destructive">{photoError}</p> : null}
+                    <p className="text-xs text-muted-foreground">
+                      {me?.employee?.id === viewing.id
+                        ? 'You can update your own display picture.'
+                        : 'HR can update this employee photo.'}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Display picture</p>
+                )}
+              </div>
+
             <dl className="grid gap-3 text-sm sm:grid-cols-2">
               <div>
                 <dt className="text-muted-foreground">Employee #</dt>
@@ -604,6 +713,7 @@ export default function EmployeesPage() {
                 <dd>{viewing.user?.email || 'Not linked'}</dd>
               </div>
             </dl>
+            </div>
           ) : null}
           <DialogFooter>
             {viewing && can('employees.update') ? (

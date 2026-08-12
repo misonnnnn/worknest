@@ -7,8 +7,15 @@ import { badRequest, conflict, notFound } from '../../lib/errors';
 import { writeAuditLog } from '../../lib/audit';
 import { buildPagination, getClientMeta } from '../../utils/helpers';
 import { asyncHandler, validateRequest } from '../../lib/http';
-import { requireAuth, requirePermission } from '../../middleware/auth';
+import multer from 'multer';
+import { requireAuth, requirePermission, requireSelfEmployeeOrPermission } from '../../middleware/auth';
 import { sendSuccess } from '../../lib/response';
+import { ALLOWED_IMAGE_TYPES, deletePhysicalFile, saveUploadedFile } from '../media/media.storage';
+
+const photoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+});
 
 const paginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -224,6 +231,79 @@ export const employeesService = {
     });
     return { id };
   },
+
+  async updatePhoto(
+    id: string,
+    file: Express.Multer.File,
+    actorId: string,
+    meta: { ipAddress?: string | null; userAgent?: string | null },
+  ) {
+    const existing = await prisma.employee.findUnique({ where: { id } });
+    if (!existing) throw notFound('Employee not found');
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.mimetype as (typeof ALLOWED_IMAGE_TYPES)[number])) {
+      throw badRequest('Only jpeg, png, webp, or gif images are allowed');
+    }
+
+    const stored = await saveUploadedFile(file.originalname, file.buffer);
+    const employee = await prisma.employee.update({
+      where: { id },
+      data: {
+        photoUrl: stored.url,
+        photoStorageKey: stored.storageKey,
+      },
+      include,
+    });
+
+    if (existing.photoStorageKey && existing.photoStorageKey !== stored.storageKey) {
+      await deletePhysicalFile(existing.photoStorageKey);
+    }
+
+    await writeAuditLog({
+      userId: actorId,
+      action: 'UPDATE',
+      resource: 'employees',
+      resourceId: id,
+      oldValues: { photoUrl: existing.photoUrl },
+      newValues: { photoUrl: employee.photoUrl },
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
+
+    return employee;
+  },
+
+  async removePhoto(
+    id: string,
+    actorId: string,
+    meta: { ipAddress?: string | null; userAgent?: string | null },
+  ) {
+    const existing = await prisma.employee.findUnique({ where: { id } });
+    if (!existing) throw notFound('Employee not found');
+
+    const employee = await prisma.employee.update({
+      where: { id },
+      data: { photoUrl: null, photoStorageKey: null },
+      include,
+    });
+
+    if (existing.photoStorageKey) {
+      await deletePhysicalFile(existing.photoStorageKey);
+    }
+
+    await writeAuditLog({
+      userId: actorId,
+      action: 'UPDATE',
+      resource: 'employees',
+      resourceId: id,
+      oldValues: { photoUrl: existing.photoUrl },
+      newValues: { photoUrl: null },
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
+
+    return employee;
+  },
 };
 
 const router = Router();
@@ -254,6 +334,31 @@ router.post(
       res,
       await employeesService.create(req.body, req.user!.id, getClientMeta(req)),
       201,
+    ),
+  ),
+);
+router.post(
+  '/:id/photo',
+  requireSelfEmployeeOrPermission('employees.update'),
+  validateRequest(uuidParamSchema, 'params'),
+  photoUpload.single('photo'),
+  asyncHandler(async (req: Request, res: Response) => {
+    const file = req.file;
+    if (!file) throw badRequest('Photo file is required');
+    return sendSuccess(
+      res,
+      await employeesService.updatePhoto(req.params.id!, file, req.user!.id, getClientMeta(req)),
+    );
+  }),
+);
+router.delete(
+  '/:id/photo',
+  requireSelfEmployeeOrPermission('employees.update'),
+  validateRequest(uuidParamSchema, 'params'),
+  asyncHandler(async (req: Request, res: Response) =>
+    sendSuccess(
+      res,
+      await employeesService.removePhoto(req.params.id!, req.user!.id, getClientMeta(req)),
     ),
   ),
 );
