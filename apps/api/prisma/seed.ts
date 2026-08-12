@@ -201,12 +201,73 @@ async function seedOrgStructure(adminUserId: string) {
   });
 }
 
+async function seedProcurement() {
+  // One default warehouse is enough for the beginner flow
+  const warehouse = await prisma.warehouse.upsert({
+    where: { code: 'MAIN' },
+    update: { name: 'Main Warehouse', isDefault: true, isActive: true },
+    create: { code: 'MAIN', name: 'Main Warehouse', isDefault: true, isActive: true },
+  });
+
+  // Clear default flag on any other warehouses
+  await prisma.warehouse.updateMany({
+    where: { NOT: { id: warehouse.id } },
+    data: { isDefault: false },
+  });
+
+  const products = [
+    { sku: 'PEN-001', name: 'Office Pen', unit: 'pcs', description: 'Blue ballpoint pen' },
+    { sku: 'PAPER-A4', name: 'A4 Copy Paper', unit: 'ream', description: '500 sheets' },
+    { sku: 'USB-16G', name: 'USB Drive 16GB', unit: 'pcs', description: null },
+  ];
+
+  for (const product of products) {
+    const sku = product.sku.trim().toUpperCase();
+    await prisma.product.upsert({
+      where: { sku },
+      update: {
+        name: product.name,
+        unit: product.unit,
+        description: product.description,
+        trackInventory: true,
+        isActive: true,
+      },
+      create: {
+        sku,
+        name: product.name,
+        unit: product.unit,
+        description: product.description,
+        trackInventory: true,
+        isActive: true,
+      },
+    });
+  }
+
+  await prisma.supplier.upsert({
+    where: { code: 'SUP-001' },
+    update: {
+      name: 'Office Supplies Co',
+      email: 'orders@officesupplies.local',
+      phone: '+1-555-0100',
+      isActive: true,
+    },
+    create: {
+      code: 'SUP-001',
+      name: 'Office Supplies Co',
+      email: 'orders@officesupplies.local',
+      phone: '+1-555-0100',
+      isActive: true,
+    },
+  });
+}
+
 async function main() {
-  console.log('Seeding WorkNest Phase 1 data...');
+  console.log('Seeding WorkNest data...');
   await upsertPermissions();
   const role = await upsertSuperAdminRole();
   const admin = await upsertAdminUser(role.id);
   await seedOrgStructure(admin.id);
+  await seedProcurement();
   console.log('Seed completed.');
   console.log(`Admin: ${admin.email}`);
 }

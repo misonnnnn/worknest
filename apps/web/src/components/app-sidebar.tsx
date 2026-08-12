@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Building,
   FolderOpen,
+  Package,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -70,6 +71,18 @@ const NAV_SECTIONS: NavSection[] = [
       { title: 'Departments', href: '/departments', permission: 'departments.view' },
       { title: 'Positions', href: '/positions', permission: 'positions.view' },
       { title: 'Employees', href: '/employees', permission: 'employees.view' },
+    ],
+  },
+  {
+    title: 'Operations',
+    icon: Package,
+    items: [
+      { title: 'Products', href: '/products', permission: 'products.view' },
+      { title: 'Suppliers', href: '/suppliers', permission: 'suppliers.view' },
+      { title: 'Warehouses', href: '/warehouses', permission: 'warehouses.view' },
+      { title: 'Inventory', href: '/inventory', permission: 'inventory.view' },
+      { title: 'Requisitions', href: '/purchase-requisitions', permission: 'requisitions.view' },
+      { title: 'Purchase Orders', href: '/purchase-orders', permission: 'purchasing.view' },
     ],
   },
 ];

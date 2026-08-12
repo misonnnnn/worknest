@@ -110,6 +110,29 @@ Complete admin UI for foundation modules:
 
 **Not in Phase 2:** inventory, purchasing, sales, invoices, payments, accounting.
 
+## Phase 3 — Procurement & Inventory
+
+Simple buy-and-stock flow (no invoices, payments, sales, or multi-warehouse transfers):
+
+1. Products, Suppliers, Warehouses
+2. **Purchase requisition** (Draft → Submit → Approve / Reject)
+3. **Convert approved requisition** → draft Purchase Order (pick supplier + prices)
+4. Submit PO (Ordered) → Receive goods → stock goes up + movement logged
+5. Manual stock adjust when needed
+
+API routes: `/api/products`, `/api/suppliers`, `/api/warehouses`, `/api/inventory/*`, `/api/purchase-requisitions/*`, `/api/purchase-orders/*`
+
+After pulling, run:
+
+```bash
+npx prisma migrate deploy
+npm run db:seed
+```
+
+(from `apps/api`, or use the workspace scripts). Re-seed so Super Admin gets the new permissions.
+
+**Skipped for later:** AP/accounting, sales/SO, multi-level approvals, transfers between warehouses.
+
 ## File Manager
 
 Media library at `/file-manager` with nested folders, image uploads, search, copy/cut/paste, and RBAC (`media.view`, `media.create`, `media.update`, `media.delete`).

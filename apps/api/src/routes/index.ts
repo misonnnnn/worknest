@@ -8,6 +8,12 @@ import positionsRoutes from '../modules/positions/positions.routes';
 import employeesRoutes from '../modules/employees/employees.routes';
 import auditLogsRoutes from '../modules/audit-logs/audit-logs.routes';
 import mediaRoutes from '../modules/media/media.routes';
+import productsRoutes from '../modules/products/products.routes';
+import suppliersRoutes from '../modules/suppliers/suppliers.routes';
+import warehousesRoutes from '../modules/warehouses/warehouses.routes';
+import inventoryRoutes from '../modules/inventory/inventory.routes';
+import purchasingRoutes from '../modules/purchasing/purchasing.routes';
+import requisitionsRoutes from '../modules/requisitions/requisitions.routes';
 
 const router = Router();
 
@@ -24,5 +30,11 @@ router.use('/positions', positionsRoutes);
 router.use('/employees', employeesRoutes);
 router.use('/audit-logs', auditLogsRoutes);
 router.use('/media', mediaRoutes);
+router.use('/products', productsRoutes);
+router.use('/suppliers', suppliersRoutes);
+router.use('/warehouses', warehousesRoutes);
+router.use('/inventory', inventoryRoutes);
+router.use('/purchase-requisitions', requisitionsRoutes);
+router.use('/purchase-orders', purchasingRoutes);
 
 export default router;

@@ -16,6 +16,8 @@ type ConfirmDialogProps = {
   title: string;
   description: string;
   confirmLabel?: string;
+  /** Use "destructive" for delete/cancel, "default" for normal confirms */
+  confirmVariant?: 'default' | 'destructive';
   loading?: boolean;
   error?: string | null;
   onConfirm: () => void | Promise<void>;
@@ -27,6 +29,7 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel = 'Delete',
+  confirmVariant = 'destructive',
   loading = false,
   error,
   onConfirm,
@@ -43,7 +46,12 @@ export function ConfirmDialog({
           <Button type="button" variant="outline" disabled={loading} onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button type="button" variant="destructive" disabled={loading} onClick={() => void onConfirm()}>
+          <Button
+            type="button"
+            variant={confirmVariant}
+            disabled={loading}
+            onClick={() => void onConfirm()}
+          >
             {loading ? 'Working…' : confirmLabel}
           </Button>
         </DialogFooter>
