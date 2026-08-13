@@ -107,6 +107,34 @@ export interface TypingMyStats {
   wpmHistory: Array<{ date: string; wpm: number }>;
 }
 
+export interface NumberMemoryResultRecord {
+  id: string;
+  userId: string;
+  maxDigits: number;
+  createdAt: string;
+}
+
+export interface NumberMemoryBest {
+  maxDigits: number;
+}
+
+export interface NumberMemoryLeaderboardEntry {
+  rank: number;
+  userId: string;
+  displayName: string;
+  maxDigits: number;
+  createdAt: string;
+}
+
+export interface NumberMemoryLeaderboardResponse {
+  items: NumberMemoryLeaderboardEntry[];
+  myRank: number | null;
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;

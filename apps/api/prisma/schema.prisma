@@ -40,6 +40,7 @@ model User {
   requestedRequisitions  PurchaseRequisition[] @relation("RequisitionRequester")
   approvedRequisitions   PurchaseRequisition[] @relation("RequisitionApprover")
   typingTestResults      TypingTestResult[]
+  numberMemoryResults    NumberMemoryResult[]
 
   @@index([isActive])
   @@map("users")
@@ -437,4 +438,16 @@ model TypingTestResult {
   @@index([mode, modeValue, wpm])
   @@index([wpm, accuracy, createdAt])
   @@map("typing_test_results")
+}
+
+model NumberMemoryResult {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  maxDigits Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, maxDigits])
+  @@index([maxDigits, createdAt])
+  @@map("number_memory_results")
 }

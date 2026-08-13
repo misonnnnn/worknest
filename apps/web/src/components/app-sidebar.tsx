@@ -14,6 +14,8 @@ import {
   FolderOpen,
   Package,
   Gamepad2,
+  Keyboard,
+  Brain,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -47,6 +49,7 @@ type NavLink = {
   title: string;
   href: string;
   permission?: string;
+  icon?: React.ComponentType<{ className?: string }>;
   children?: NavLink[];
 };
 
@@ -88,7 +91,6 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    // Room for more games later (e.g. Memory Match, Quiz)
     title: 'Games',
     icon: Gamepad2,
     items: [
@@ -96,10 +98,21 @@ const NAV_SECTIONS: NavSection[] = [
         title: 'Typing Test',
         href: '/typing-test',
         permission: 'typing-tests.view',
+        icon: Keyboard,
         children: [
           { title: 'Play', href: '/typing-test', permission: 'typing-tests.view' },
           { title: 'Leaderboard', href: '/typing-test/leaderboard', permission: 'typing-tests.view' },
           { title: 'My Statistics', href: '/typing-test/statistics', permission: 'typing-tests.view' },
+        ],
+      },
+      {
+        title: 'Number Memory',
+        href: '/number-memory',
+        permission: 'number-memory.view',
+        icon: Brain,
+        children: [
+          { title: 'Play', href: '/number-memory', permission: 'number-memory.view' },
+          { title: 'Leaderboard', href: '/number-memory/leaderboard', permission: 'number-memory.view' },
         ],
       },
     ],
@@ -247,13 +260,14 @@ function NavUser() {
 
 function NestedNavItem({ item, pathname }: { item: NavLink; pathname: string }) {
   const hasChildren = Boolean(item.children?.length);
-  const open = itemIsActive(pathname, item);
+  const Icon = item.icon;
 
   if (!hasChildren) {
     return (
       <SidebarMenuSubItem>
         <SidebarMenuSubButton asChild isActive={isActivePath(pathname, item.href)}>
           <Link href={item.href}>
+            {Icon ? <Icon /> : null}
             <span>{item.title}</span>
           </Link>
         </SidebarMenuSubButton>
@@ -262,10 +276,14 @@ function NestedNavItem({ item, pathname }: { item: NavLink; pathname: string }) 
   }
 
   return (
-    <Collapsible asChild defaultOpen={open} className="group/game">
+    <Collapsible asChild defaultOpen className="group/game">
       <SidebarMenuSubItem>
         <CollapsibleTrigger asChild>
-          <SidebarMenuSubButton className="cursor-pointer">
+          <SidebarMenuSubButton
+            className="cursor-pointer"
+            isActive={itemIsActive(pathname, item)}
+          >
+            {Icon ? <Icon /> : null}
             <span>{item.title}</span>
             <ChevronRight className="ml-auto size-3.5 transition-transform duration-200 group-data-[state=open]/game:rotate-90" />
           </SidebarMenuSubButton>

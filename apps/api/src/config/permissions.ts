@@ -146,6 +146,18 @@ export const PERMISSIONS = [
     action: 'play',
     description: 'Submit typing test results',
   },
+  {
+    key: 'number-memory.view',
+    resource: 'number-memory',
+    action: 'view',
+    description: 'Access the number memory game',
+  },
+  {
+    key: 'number-memory.play',
+    resource: 'number-memory',
+    action: 'play',
+    description: 'Submit number memory results',
+  },
 ] as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[number]['key'];
