@@ -14,6 +14,7 @@ const envSchema = z.object({
   ADMIN_PASSWORD: z.string().min(8).optional(),
   UPLOAD_DIR: z.string().default('uploads'),
   MEDIA_PUBLIC_BASE_URL: z.string().default('http://localhost:4000'),
+  GEMINI_API_KEY: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

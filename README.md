@@ -167,6 +167,34 @@ npm run db:seed
 
 Set `UPLOAD_DIR` and `MEDIA_PUBLIC_BASE_URL` in `.env` (see `.env.example`).
 
+## Gemini AI Assistant
+
+A small help chatbot for general ERP questions (procurement, inventory, requisitions, and similar). It does **not** read live database data.
+
+1. Create a Gemini API key in [Google AI Studio](https://aistudio.google.com/apikey).
+2. Add it to `apps/api/.env` (and the root `.env` if you use that copy):
+
+```env
+GEMINI_API_KEY=
+```
+
+3. Install dependencies (includes `@google/genai` on the API):
+
+```bash
+npm install
+```
+
+4. Start the Express backend, then the Next.js app:
+
+```bash
+npm run dev:api
+npm run dev:web
+```
+
+5. Log in to the ERP. Click the floating assistant button in the bottom-right corner and ask a question such as “What is procurement?”
+
+The browser calls `POST /api/ai/chat` on Express. Express calls Gemini. The API key never leaves the backend.
+
 ## RBAC
 
 Permissions use `resource.action` keys (for example `employees.view`, `roles.assign`).

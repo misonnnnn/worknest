@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { AppSidebar } from '@/components/app-sidebar';
+import { AiAssistant } from '@/components/ai-assistant';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Breadcrumb,
@@ -79,6 +80,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0 md:p-6">{children}</div>
       </SidebarInset>
+      <AiAssistant />
     </SidebarProvider>
   );
 }

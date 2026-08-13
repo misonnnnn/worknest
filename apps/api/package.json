@@ -22,6 +22,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@google/genai": "^2.17.0",
     "@prisma/client": "^6.6.0",
     "@worknest/types": "*",
     "argon2": "^0.41.1",
