@@ -12,8 +12,8 @@ import { Label } from '@/components/ui/label';
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
-  const [email, setEmail] = useState('admin@worknest.local');
-  const [password, setPassword] = useState('ChangeMeAdmin123!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -35,7 +35,8 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4">
       <Card className="w-full max-w-sm shadow-none">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-base">WorkNest</CardTitle>
+          <CardTitle className="text-base">WorkNest ERP</CardTitle>
+          <hr />
           <CardDescription>Sign in to continue</CardDescription>
         </CardHeader>
         <CardContent>
