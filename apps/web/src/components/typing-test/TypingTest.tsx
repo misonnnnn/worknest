@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import type { TypingTextCategory } from '@worknest/types';
 import {
   TEXT_CATEGORY_LABELS,
+  DEFAULT_TIME_MODE,
+  DEFAULT_WORD_MODE,
   TIME_MODE_OPTIONS,
   WORD_MODE_OPTIONS,
   type TypingConfig,
@@ -29,7 +31,7 @@ export function TypingTest() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [modeType, setModeType] = useState<'time' | 'words'>('time');
-  const [modeValue, setModeValue] = useState(60);
+  const [modeValue, setModeValue] = useState(DEFAULT_TIME_MODE);
   const [category, setCategory] = useState<TypingTextCategory>('general');
   const [savedRank, setSavedRank] = useState<number | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -160,7 +162,7 @@ export function TypingTest() {
           onValueChange={(v) => {
             const next = (v ?? 'time') as 'time' | 'words';
             setModeType(next);
-            setModeValue(next === 'time' ? 60 : 25);
+            setModeValue(next === 'time' ? DEFAULT_TIME_MODE : DEFAULT_WORD_MODE);
           }}
           disabled={settingsDisabled}
         >

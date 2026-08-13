@@ -45,6 +45,8 @@ export const TEXT_CATEGORY_LABELS: Record<TypingTextCategory, string> = {
 
 export const TIME_MODE_OPTIONS = [15, 30, 60, 120] as const;
 export const WORD_MODE_OPTIONS = [25, 50, 100] as const;
+export const DEFAULT_TIME_MODE = 30;
+export const DEFAULT_WORD_MODE = 25;
 
 export type TypingModeType = 'time' | 'words';
 
