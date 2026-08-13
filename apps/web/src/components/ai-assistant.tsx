@@ -85,6 +85,8 @@ export function AiAssistant() {
     } catch (err) {
       if (err instanceof ApiClientError && err.status === 400) {
         setError('Please enter a valid question.');
+      } else if (err instanceof ApiClientError && err.status === 429) {
+        setError(err.message);
       } else {
         setError(UNAVAILABLE_MESSAGE);
       }

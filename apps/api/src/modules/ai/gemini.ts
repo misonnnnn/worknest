@@ -25,8 +25,15 @@ Rules:
 const UNAVAILABLE_MESSAGE =
   'Sorry, the AI assistant is temporarily unavailable. Please try again later.';
 
+const RATE_LIMIT_MESSAGE =
+  'The AI assistant hit its free usage limit. Please wait a minute and try again.';
+
 function assistantUnavailable() {
   return new AppError('INTERNAL_ERROR', UNAVAILABLE_MESSAGE, 503);
+}
+
+function assistantRateLimited() {
+  return new AppError('INTERNAL_ERROR', RATE_LIMIT_MESSAGE, 429);
 }
 
 type ChatTurn = {
@@ -84,6 +91,11 @@ export async function askGemini(userMessage: string, history: ChatTurn[] = []): 
       status ?? '',
       err instanceof Error ? err.message : 'unknown error',
     );
+
+    if (status === 429) {
+      throw assistantRateLimited();
+    }
+
     throw assistantUnavailable();
   }
 }
