@@ -158,6 +158,46 @@ export const PERMISSIONS = [
     action: 'play',
     description: 'Submit number memory results',
   },
+  { key: 'projects.view', resource: 'projects', action: 'view', description: 'View projects' },
+  { key: 'projects.create', resource: 'projects', action: 'create', description: 'Create projects' },
+  { key: 'projects.update', resource: 'projects', action: 'update', description: 'Update projects' },
+  { key: 'projects.delete', resource: 'projects', action: 'delete', description: 'Delete projects' },
+  {
+    key: 'projects.manage',
+    resource: 'projects',
+    action: 'manage',
+    description: 'Manage project members and project status',
+  },
+  {
+    key: 'projects.manage_settings',
+    resource: 'projects',
+    action: 'manage_settings',
+    description: 'Manage project statuses, work item types, and work item statuses',
+  },
+  {
+    key: 'work-items.create',
+    resource: 'work-items',
+    action: 'create',
+    description: 'Create or report work items',
+  },
+  {
+    key: 'work-items.update',
+    resource: 'work-items',
+    action: 'update',
+    description: 'Edit work items and change status',
+  },
+  {
+    key: 'work-items.assign',
+    resource: 'work-items',
+    action: 'assign',
+    description: 'Assign work items',
+  },
+  {
+    key: 'work-items.delete',
+    resource: 'work-items',
+    action: 'delete',
+    description: 'Delete work items',
+  },
 ] as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[number]['key'];

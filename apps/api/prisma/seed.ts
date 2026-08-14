@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { PERMISSIONS, SUPER_ADMIN_ROLE } from '../src/config/permissions';
+import { ensureProjectCatalog } from '../src/modules/projects/catalog';
 
 const prisma = new PrismaClient();
 
@@ -268,6 +269,7 @@ async function main() {
   const admin = await upsertAdminUser(role.id);
   await seedOrgStructure(admin.id);
   await seedProcurement();
+  await ensureProjectCatalog(prisma);
   console.log('Seed completed.');
   console.log(`Admin: ${admin.email}`);
 }

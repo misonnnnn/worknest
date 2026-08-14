@@ -41,6 +41,13 @@ model User {
   approvedRequisitions   PurchaseRequisition[] @relation("RequisitionApprover")
   typingTestResults      TypingTestResult[]
   numberMemoryResults    NumberMemoryResult[]
+  managedProjects        Project[]             @relation("ProjectManager")
+  createdProjects        Project[]             @relation("ProjectCreator")
+  projectMemberships     ProjectMember[]
+  reportedWorkItems      WorkItem[]            @relation("WorkItemReporter")
+  assignedWorkItems      WorkItem[]            @relation("WorkItemAssignee")
+  workItemComments       WorkItemComment[]
+  projectActivityLogs    ProjectActivityLog[]
 
   @@index([isActive])
   @@map("users")
@@ -107,6 +114,7 @@ model Department {
   employees     Employee[]
   positions     Position[]
   requisitions  PurchaseRequisition[]
+  projects      Project[]
 
   @@index([isActive])
   @@map("departments")
@@ -450,4 +458,170 @@ model NumberMemoryResult {
   @@index([userId, maxDigits])
   @@index([maxDigits, createdAt])
   @@map("number_memory_results")
+}
+
+enum ProjectMemberRole {
+  PROJECT_MANAGER
+  MEMBER
+  OBSERVER
+}
+
+enum WorkItemPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model ProjectStatus {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String    @unique
+  description String?
+  sortOrder   Int       @default(0)
+  isDefault   Boolean   @default(false)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  projects    Project[]
+
+  @@index([isActive])
+  @@map("project_statuses")
+}
+
+model WorkItemType {
+  id          String     @id @default(uuid()) @db.Uuid
+  name        String     @unique
+  description String?
+  sortOrder   Int        @default(0)
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  workItems   WorkItem[]
+
+  @@index([isActive])
+  @@map("work_item_types")
+}
+
+model WorkItemStatus {
+  id          String     @id @default(uuid()) @db.Uuid
+  name        String     @unique
+  description String?
+  sortOrder   Int        @default(0)
+  isDefault   Boolean    @default(false)
+  isCompleted Boolean    @default(false)
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  workItems   WorkItem[]
+
+  @@index([isActive])
+  @@map("work_item_statuses")
+}
+
+model Project {
+  id                 String               @id @default(uuid()) @db.Uuid
+  name               String
+  key                String               @unique
+  description        String?
+  departmentId       String?              @db.Uuid
+  projectManagerId   String               @db.Uuid
+  statusId           String               @db.Uuid
+  startDate          DateTime?            @db.Date
+  endDate            DateTime?            @db.Date
+  createdById        String               @db.Uuid
+  nextWorkItemNumber Int                  @default(1)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  department         Department?          @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  projectManager     User                 @relation("ProjectManager", fields: [projectManagerId], references: [id], onDelete: Restrict)
+  createdBy          User                 @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  status             ProjectStatus        @relation(fields: [statusId], references: [id], onDelete: Restrict)
+  members            ProjectMember[]
+  workItems          WorkItem[]
+  activityLogs       ProjectActivityLog[]
+
+  @@index([departmentId])
+  @@index([projectManagerId])
+  @@index([statusId])
+  @@index([createdById])
+  @@map("projects")
+}
+
+model ProjectMember {
+  id        String            @id @default(uuid()) @db.Uuid
+  projectId String            @db.Uuid
+  userId    String            @db.Uuid
+  role      ProjectMemberRole @default(MEMBER)
+  createdAt DateTime          @default(now())
+  project   Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([userId])
+  @@map("project_members")
+}
+
+model WorkItem {
+  id           String               @id @default(uuid()) @db.Uuid
+  projectId    String               @db.Uuid
+  number       Int
+  typeId       String               @db.Uuid
+  title        String
+  description  String?
+  statusId     String               @db.Uuid
+  priority     WorkItemPriority     @default(MEDIUM)
+  reporterId   String               @db.Uuid
+  assigneeId   String?              @db.Uuid
+  dueDate      DateTime?            @db.Date
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  project      Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type         WorkItemType         @relation(fields: [typeId], references: [id], onDelete: Restrict)
+  status       WorkItemStatus       @relation(fields: [statusId], references: [id], onDelete: Restrict)
+  reporter     User                 @relation("WorkItemReporter", fields: [reporterId], references: [id], onDelete: Restrict)
+  assignee     User?                @relation("WorkItemAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  comments     WorkItemComment[]
+  activityLogs ProjectActivityLog[]
+
+  @@unique([projectId, number])
+  @@index([projectId])
+  @@index([typeId])
+  @@index([statusId])
+  @@index([reporterId])
+  @@index([assigneeId])
+  @@map("work_items")
+}
+
+model WorkItemComment {
+  id         String   @id @default(uuid()) @db.Uuid
+  workItemId String   @db.Uuid
+  userId     String   @db.Uuid
+  comment    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  workItem   WorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([workItemId])
+  @@index([userId])
+  @@map("work_item_comments")
+}
+
+model ProjectActivityLog {
+  id         String    @id @default(uuid()) @db.Uuid
+  projectId  String    @db.Uuid
+  workItemId String?   @db.Uuid
+  userId     String?   @db.Uuid
+  action     String
+  oldValue   String?
+  newValue   String?
+  createdAt  DateTime  @default(now())
+  project    Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workItem   WorkItem? @relation(fields: [workItemId], references: [id], onDelete: SetNull)
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, createdAt])
+  @@index([workItemId])
+  @@index([userId])
+  @@map("project_activity_logs")
 }

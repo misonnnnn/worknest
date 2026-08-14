@@ -11,6 +11,7 @@ import {
   Layers,
   ShieldCheck,
   Building,
+  FolderKanban,
   FolderOpen,
   Package,
   Gamepad2,
@@ -88,6 +89,15 @@ const NAV_SECTIONS: NavSection[] = [
       { title: 'Inventory', href: '/inventory', permission: 'inventory.view' },
       { title: 'Requisitions', href: '/purchase-requisitions', permission: 'requisitions.view' },
       { title: 'Purchase Orders', href: '/purchase-orders', permission: 'purchasing.view' },
+    ],
+  },
+  {
+    title: 'Project Management',
+    icon: FolderKanban,
+    items: [
+      { title: 'Projects', href: '/projects', permission: 'projects.view' },
+      { title: 'My Projects', href: '/my-projects', permission: 'projects.view' },
+      { title: 'My Work Items', href: '/my-work-items', permission: 'projects.view' },
     ],
   },
   {
