@@ -300,7 +300,7 @@ export default function EmployeesPage() {
             header: '',
             className: 'w-[1%] pr-0',
             render: (e) => (
-              <Avatar size="md">
+              <Avatar>
                 {e.photoUrl ? (
                   <AvatarImage src={mediaUrl(e.photoUrl)} alt="" />
                 ) : null}
