@@ -296,6 +296,21 @@ export default function EmployeesPage() {
         onCreate={openCreate}
         columns={[
           {
+            key: 'photo',
+            header: '',
+            className: 'w-[1%] pr-0',
+            render: (e) => (
+              <Avatar size="md">
+                {e.photoUrl ? (
+                  <AvatarImage src={mediaUrl(e.photoUrl)} alt="" />
+                ) : null}
+                <AvatarFallback>
+                  {`${e.firstName[0] ?? ''}${e.lastName[0] ?? ''}`.toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            ),
+          },
+          {
             key: 'number',
             header: 'Employee #',
             render: (e) => <span className="mono text-xs">{e.employeeNumber}</span>,

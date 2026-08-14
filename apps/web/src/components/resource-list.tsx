@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { cn } from '@/lib/utils';
 
 type ResourceListProps<T> = {
   title: string;
@@ -27,6 +28,7 @@ type ResourceListProps<T> = {
   columns: Array<{
     key: string;
     header: string;
+    className?: string;
     render: (item: T) => React.ReactNode;
   }>;
   createLabel?: string;
@@ -141,8 +143,11 @@ export function ResourceListPage<T extends { id: string }>({
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   {columns.map((col) => (
-                    <TableHead key={col.key} className="h-9 text-xs font-medium">
-                      {col.header}
+                    <TableHead
+                      key={col.key}
+                      className={cn('h-9 text-xs font-medium', col.className)}
+                    >
+                      {col.header || <span className="sr-only">{col.key}</span>}
                     </TableHead>
                   ))}
                   {actions ? (
@@ -156,7 +161,10 @@ export function ResourceListPage<T extends { id: string }>({
                 {data.items.map((item: T) => (
                   <TableRow key={item.id}>
                     {columns.map((col) => (
-                      <TableCell key={col.key} className="py-2.5 text-sm">
+                      <TableCell
+                        key={col.key}
+                        className={cn('py-2.5 text-sm', col.className)}
+                      >
                         {col.render(item)}
                       </TableCell>
                     ))}
