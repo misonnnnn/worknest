@@ -10,7 +10,12 @@ import { asyncHandler, validateRequest } from '../../lib/http';
 import multer from 'multer';
 import { requireAuth, requirePermission, requireSelfEmployeeOrPermission } from '../../middleware/auth';
 import { sendSuccess } from '../../lib/response';
-import { ALLOWED_IMAGE_TYPES, deletePhysicalFile, saveUploadedFile } from '../media/media.storage';
+import {
+  ALLOWED_IMAGE_TYPES,
+  deleteStoredFile,
+  getFileAccessUrl,
+  saveUploadedFile,
+} from '../media/media.storage';
 
 const photoUpload = multer({
   storage: multer.memoryStorage(),
@@ -56,6 +61,19 @@ const include = {
   },
   user: { select: { id: true, email: true } },
 } as const;
+
+type EmployeeWithPhoto = {
+  photoUrl: string | null;
+  photoStorageKey: string | null;
+};
+
+async function withAccessiblePhotoUrl<T extends EmployeeWithPhoto>(employee: T): Promise<T> {
+  if (!employee.photoStorageKey) return employee;
+  return {
+    ...employee,
+    photoUrl: await getFileAccessUrl(employee.photoStorageKey),
+  };
+}
 
 async function assertRefs(input: {
   userId?: string | null;
@@ -123,13 +141,16 @@ export const employeesService = {
       }),
     ]);
 
-    return { items, ...buildPagination(query.page, query.pageSize, total) };
+    return {
+      items: await Promise.all(items.map(withAccessiblePhotoUrl)),
+      ...buildPagination(query.page, query.pageSize, total),
+    };
   },
 
   async getById(id: string) {
     const employee = await prisma.employee.findUnique({ where: { id }, include });
     if (!employee) throw notFound('Employee not found');
-    return employee;
+    return withAccessiblePhotoUrl(employee);
   },
 
   async create(
@@ -162,7 +183,7 @@ export const employeesService = {
       userAgent: meta.userAgent,
     });
 
-    return employee;
+    return withAccessiblePhotoUrl(employee);
   },
 
   async update(
@@ -209,7 +230,7 @@ export const employeesService = {
       userAgent: meta.userAgent,
     });
 
-    return employee;
+    return withAccessiblePhotoUrl(employee);
   },
 
   async remove(
@@ -245,32 +266,45 @@ export const employeesService = {
       throw badRequest('Only jpeg, png, webp, or gif images are allowed');
     }
 
-    const stored = await saveUploadedFile(file.originalname, file.buffer);
-    const employee = await prisma.employee.update({
-      where: { id },
-      data: {
-        photoUrl: stored.url,
-        photoStorageKey: stored.storageKey,
-      },
-      include,
-    });
+    const stored = await saveUploadedFile(file.originalname, file.buffer, file.mimetype);
+    try {
+      const employee = await prisma.employee.update({
+        where: { id },
+        data: {
+          photoUrl: null,
+          photoStorageKey: stored.storageKey,
+        },
+        include,
+      });
 
-    if (existing.photoStorageKey && existing.photoStorageKey !== stored.storageKey) {
-      await deletePhysicalFile(existing.photoStorageKey);
+      if (existing.photoStorageKey && existing.photoStorageKey !== stored.storageKey) {
+        try {
+          await deleteStoredFile(existing.photoStorageKey);
+        } catch (cleanupErr) {
+          console.error('Failed to delete previous employee photo from storage:', cleanupErr);
+        }
+      }
+
+      await writeAuditLog({
+        userId: actorId,
+        action: 'UPDATE',
+        resource: 'employees',
+        resourceId: id,
+        oldValues: { photoUrl: existing.photoUrl },
+        newValues: { photoStorageKey: stored.storageKey },
+        ipAddress: meta.ipAddress,
+        userAgent: meta.userAgent,
+      });
+
+      return withAccessiblePhotoUrl(employee);
+    } catch (err) {
+      try {
+        await deleteStoredFile(stored.storageKey);
+      } catch (cleanupErr) {
+        console.error('Failed to roll back uploaded employee photo:', cleanupErr);
+      }
+      throw err;
     }
-
-    await writeAuditLog({
-      userId: actorId,
-      action: 'UPDATE',
-      resource: 'employees',
-      resourceId: id,
-      oldValues: { photoUrl: existing.photoUrl },
-      newValues: { photoUrl: employee.photoUrl },
-      ipAddress: meta.ipAddress,
-      userAgent: meta.userAgent,
-    });
-
-    return employee;
   },
 
   async removePhoto(
@@ -281,15 +315,15 @@ export const employeesService = {
     const existing = await prisma.employee.findUnique({ where: { id } });
     if (!existing) throw notFound('Employee not found');
 
+    if (existing.photoStorageKey) {
+      await deleteStoredFile(existing.photoStorageKey);
+    }
+
     const employee = await prisma.employee.update({
       where: { id },
       data: { photoUrl: null, photoStorageKey: null },
       include,
     });
-
-    if (existing.photoStorageKey) {
-      await deletePhysicalFile(existing.photoStorageKey);
-    }
 
     await writeAuditLog({
       userId: actorId,
@@ -302,7 +336,7 @@ export const employeesService = {
       userAgent: meta.userAgent,
     });
 
-    return employee;
+    return withAccessiblePhotoUrl(employee);
   },
 };
 

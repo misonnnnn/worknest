@@ -15,6 +15,10 @@ const envSchema = z.object({
   UPLOAD_DIR: z.string().default('uploads'),
   MEDIA_PUBLIC_BASE_URL: z.string().default('http://localhost:4000'),
   GEMINI_API_KEY: z.string().optional(),
+  R2_ACCOUNT_ID: z.string().optional(),
+  R2_ACCESS_KEY_ID: z.string().optional(),
+  R2_SECRET_ACCESS_KEY: z.string().optional(),
+  R2_BUCKET_NAME: z.string().default('worknestfiles'),
 });
 
 const parsed = envSchema.safeParse(process.env);

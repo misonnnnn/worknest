@@ -13,7 +13,7 @@ import {
   updateFolderSchema,
   uuidParamSchema,
 } from './media.schema';
-import { ALLOWED_IMAGE_TYPES, saveUploadedFile } from './media.storage';
+import { ALLOWED_IMAGE_TYPES, deleteStoredFile, saveUploadedFile } from './media.storage';
 import { writeAuditLog } from '../../lib/audit';
 import { asyncHandler, validateRequest } from '../../lib/http';
 import { requireAuth, requirePermission } from '../../middleware/auth';
@@ -169,30 +169,48 @@ router.post(
         });
       }
 
-      const stored = await saveUploadedFile(file.originalname, file.buffer);
-      const uniqueName = await mediaService.getUniqueFileNameForUpload(file.originalname, folderId);
-      const mediaFile = await mediaService.createFile({
-        name: uniqueName,
-        folderId,
-        storageKey: stored.storageKey,
-        url: stored.url,
-        mimeType: file.mimetype,
-        size: file.size,
-      });
+      const stored = await saveUploadedFile(file.originalname, file.buffer, file.mimetype);
+      try {
+        const uniqueName = await mediaService.getUniqueFileNameForUpload(file.originalname, folderId);
+        const mediaFile = await mediaService.createFile({
+          name: uniqueName,
+          folderId,
+          storageKey: stored.storageKey,
+          mimeType: file.mimetype,
+          size: file.size,
+        });
 
-      await writeAuditLog({
-        userId: req.user!.id,
-        action: 'CREATE',
-        resource: 'media-files',
-        resourceId: mediaFile.id,
-        newValues: { name: mediaFile.name, folderId: mediaFile.folderId },
-        ...getClientMeta(req),
-      });
+        await writeAuditLog({
+          userId: req.user!.id,
+          action: 'CREATE',
+          resource: 'media-files',
+          resourceId: mediaFile.id,
+          newValues: { name: mediaFile.name, folderId: mediaFile.folderId },
+          ...getClientMeta(req),
+        });
 
-      created.push(mediaFile);
+        created.push(mediaFile);
+      } catch (err) {
+        try {
+          await deleteStoredFile(stored.storageKey);
+        } catch (cleanupErr) {
+          console.error('Failed to roll back uploaded R2 object:', cleanupErr);
+        }
+        throw err;
+      }
     }
 
     return sendSuccess(res, { files: created, count: created.length }, 201);
+  }),
+);
+
+router.get(
+  '/files/:id/download',
+  requirePermission('media.view'),
+  validateRequest(uuidParamSchema, 'params'),
+  asyncHandler(async (req: Request, res: Response) => {
+    const file = await mediaService.getFile(req.params.id!);
+    return sendSuccess(res, { url: file.url });
   }),
 );
 

@@ -1,6 +1,6 @@
 import { prisma } from '../../lib/prisma';
 import { badRequest, conflict, notFound } from '../../lib/errors';
-import { deletePhysicalFile } from './media.storage';
+import { deleteStoredFile, getFileAccessUrl } from './media.storage';
 
 export type MediaFolderDTO = {
   id: string;
@@ -35,7 +35,7 @@ function mapFolder(folder: {
   return folder;
 }
 
-function mapFile(file: {
+async function mapFile(file: {
   id: string;
   name: string;
   folderId: string | null;
@@ -46,8 +46,11 @@ function mapFile(file: {
   alt: string | null;
   createdAt: Date;
   updatedAt: Date;
-}): MediaFileDTO {
-  return file;
+}): Promise<MediaFileDTO> {
+  return {
+    ...file,
+    url: await getFileAccessUrl(file.storageKey),
+  };
 }
 
 async function getFolderByName(name: string, parentId: string | null) {
@@ -243,7 +246,7 @@ export const mediaService = {
       where: { folderId },
       orderBy: { name: 'asc' },
     });
-    return files.map(mapFile);
+    return Promise.all(files.map(mapFile));
   },
 
   async getFile(id: string) {
@@ -256,7 +259,6 @@ export const mediaService = {
     name: string;
     folderId?: string | null;
     storageKey: string;
-    url: string;
     mimeType: string;
     size: number;
     alt?: string | null;
@@ -269,7 +271,7 @@ export const mediaService = {
         name: input.name,
         folderId,
         storageKey: input.storageKey,
-        url: input.url,
+        url: '',
         mimeType: input.mimeType,
         size: input.size,
         alt: input.alt ?? null,
@@ -310,14 +312,14 @@ export const mediaService = {
     const existing = await prisma.mediaFile.findUnique({ where: { id } });
     if (!existing) throw notFound('File not found');
 
-    await prisma.mediaFile.delete({ where: { id } });
-
     const remaining = await prisma.mediaFile.count({
-      where: { storageKey: existing.storageKey },
+      where: { storageKey: existing.storageKey, NOT: { id } },
     });
     if (remaining === 0) {
-      await deletePhysicalFile(existing.storageKey);
+      await deleteStoredFile(existing.storageKey);
     }
+
+    await prisma.mediaFile.delete({ where: { id } });
 
     return { id };
   },
@@ -336,7 +338,7 @@ export const mediaService = {
       return folder.name.toLowerCase().includes(q);
     });
 
-    const allFiles = (await prisma.mediaFile.findMany()).map(mapFile);
+    const allFiles = await Promise.all((await prisma.mediaFile.findMany()).map(mapFile));
     const files = allFiles.filter((file) => {
       const fileFolderId = file.folderId;
       if (!searchingFromRoot) {
@@ -358,7 +360,6 @@ export const mediaService = {
       name,
       folderId: targetFolderId,
       storageKey: source.storageKey,
-      url: source.url,
       mimeType: source.mimeType,
       size: source.size,
       alt: source.alt,
