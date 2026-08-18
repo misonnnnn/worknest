@@ -48,6 +48,10 @@ model User {
   assignedWorkItems      WorkItem[]            @relation("WorkItemAssignee")
   workItemComments       WorkItemComment[]
   projectActivityLogs    ProjectActivityLog[]
+  crmAssignedCases       CrmCase[]             @relation("CrmCaseAssignee")
+  crmInteractions        CrmInteraction[]      @relation("CrmInteractionAgent")
+  crmFollowUps           CrmFollowUp[]         @relation("CrmFollowUpAssignee")
+  crmLogComments         CrmLogComment[]
 
   @@index([isActive])
   @@map("users")
@@ -624,4 +628,195 @@ model ProjectActivityLog {
   @@index([workItemId])
   @@index([userId])
   @@map("project_activity_logs")
+}
+
+enum CrmChannel {
+  PHONE
+  EMAIL
+  CHAT
+  WALK_IN
+  OTHER
+}
+
+enum CrmInteractionType {
+  INBOUND_CALL
+  OUTBOUND_CALL
+  EMAIL
+  CHAT
+  OTHER
+}
+
+enum CrmResolution {
+  RESOLVED_FIRST_CONTACT
+  RESOLVED
+  CALLBACK_REQUIRED
+  PENDING
+  ESCALATED
+  NO_RESOLUTION
+  OTHER
+}
+
+enum CrmInteractionStatus {
+  COMPLETED
+  PENDING
+  IN_PROGRESS
+  CANCELLED
+}
+
+enum CrmPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum CrmCaseStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  CANCELLED
+}
+
+enum CrmFollowUpStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum CrmFollowUpType {
+  CALL
+  EMAIL
+  VISIT
+  OTHER
+}
+
+model Customer {
+  id             String   @id @default(uuid()) @db.Uuid
+  code           String   @unique
+  name           String
+  storeName      String?
+  phone          String?
+  email          String?
+  address        String?
+  notes          String?
+  isActive       Boolean  @default(true)
+  legacySource   String?
+  legacyRecordId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  interactions   CrmInteraction[]
+  cases          CrmCase[]
+  followUps      CrmFollowUp[]
+
+  @@index([name])
+  @@index([storeName])
+  @@index([phone])
+  @@index([email])
+  @@index([isActive])
+  @@unique([legacySource, legacyRecordId])
+  @@map("customers")
+}
+
+model CrmCase {
+  id             String        @id @default(uuid()) @db.Uuid
+  caseNumber     String        @unique
+  customerId     String        @db.Uuid
+  subject        String
+  description    String?
+  priority       CrmPriority   @default(NORMAL)
+  status         CrmCaseStatus @default(OPEN)
+  assignedToId   String?       @db.Uuid
+  closedAt       DateTime?
+  legacySource   String?
+  legacyRecordId String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  customer       Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  assignedTo     User?         @relation("CrmCaseAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  interactions   CrmInteraction[]
+  followUps      CrmFollowUp[]
+
+  @@index([customerId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([priority])
+  @@unique([legacySource, legacyRecordId])
+  @@map("crm_cases")
+}
+
+model CrmInteraction {
+  id               String                 @id @default(uuid()) @db.Uuid
+  interactionNumber String                @unique
+  customerId       String                 @db.Uuid
+  caseId           String?                @db.Uuid
+  agentId          String                 @db.Uuid
+  channel          CrmChannel
+  interactionType  CrmInteractionType
+  interactionDate  DateTime
+  durationSeconds  Int?
+  inquiry          String?
+  notes            String?
+  resolution       CrmResolution?
+  status           CrmInteractionStatus   @default(COMPLETED)
+  priority         CrmPriority            @default(NORMAL)
+  legacySource     String?
+  legacyRecordId   String?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  customer         Customer               @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  case             CrmCase?               @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  agent            User                   @relation("CrmInteractionAgent", fields: [agentId], references: [id], onDelete: Restrict)
+  followUps        CrmFollowUp[]
+  comments         CrmLogComment[]
+
+  @@index([customerId])
+  @@index([caseId])
+  @@index([agentId])
+  @@index([interactionDate])
+  @@index([status])
+  @@index([priority])
+  @@index([channel])
+  @@unique([legacySource, legacyRecordId])
+  @@map("crm_interactions")
+}
+
+model CrmFollowUp {
+  id             String             @id @default(uuid()) @db.Uuid
+  interactionId  String?            @db.Uuid
+  caseId         String?            @db.Uuid
+  customerId     String             @db.Uuid
+  assignedToId   String             @db.Uuid
+  followUpDate   DateTime
+  followUpType   CrmFollowUpType    @default(CALL)
+  notes          String?
+  status         CrmFollowUpStatus  @default(PENDING)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  interaction    CrmInteraction?    @relation(fields: [interactionId], references: [id], onDelete: SetNull)
+  case           CrmCase?           @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  customer       Customer           @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  assignedTo     User               @relation("CrmFollowUpAssignee", fields: [assignedToId], references: [id], onDelete: Restrict)
+
+  @@index([customerId])
+  @@index([interactionId])
+  @@index([caseId])
+  @@index([assignedToId])
+  @@index([followUpDate])
+  @@index([status])
+  @@map("crm_follow_ups")
+}
+
+model CrmLogComment {
+  id             String         @id @default(uuid()) @db.Uuid
+  interactionId  String         @db.Uuid
+  userId         String         @db.Uuid
+  comment        String
+  createdAt      DateTime       @default(now())
+  interaction    CrmInteraction @relation(fields: [interactionId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([interactionId])
+  @@index([userId])
+  @@map("crm_log_comments")
 }

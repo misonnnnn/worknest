@@ -262,6 +262,42 @@ async function seedProcurement() {
   });
 }
 
+async function seedCrm() {
+  const customers = [
+    {
+      code: 'CUST-00001',
+      name: 'Juan Dela Cruz',
+      storeName: 'ABC Store',
+      phone: '09171234567',
+      email: 'juan@example.com',
+      address: 'Quezon City',
+    },
+    {
+      code: 'CUST-00002',
+      name: 'Maria Santos',
+      storeName: 'Santos Mart',
+      phone: '09179876543',
+      email: 'maria@example.com',
+      address: 'Makati',
+    },
+  ];
+
+  for (const customer of customers) {
+    await prisma.customer.upsert({
+      where: { code: customer.code },
+      update: {
+        name: customer.name,
+        storeName: customer.storeName,
+        phone: customer.phone,
+        email: customer.email,
+        address: customer.address,
+        isActive: true,
+      },
+      create: customer,
+    });
+  }
+}
+
 async function main() {
   console.log('Seeding WorkNest data...');
   await upsertPermissions();
@@ -270,6 +306,7 @@ async function main() {
   await seedOrgStructure(admin.id);
   await seedProcurement();
   await ensureProjectCatalog(prisma);
+  await seedCrm();
   console.log('Seed completed.');
   console.log(`Admin: ${admin.email}`);
 }

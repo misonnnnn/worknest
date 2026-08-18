@@ -17,6 +17,7 @@ import {
   Gamepad2,
   Keyboard,
   Brain,
+  Headset
 } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -98,6 +99,17 @@ const NAV_SECTIONS: NavSection[] = [
       { title: 'Projects', href: '/projects', permission: 'projects.view' },
       { title: 'My Projects', href: '/my-projects', permission: 'projects.view' },
       { title: 'My Work Items', href: '/my-work-items', permission: 'projects.view' },
+    ],
+  },
+  {
+    title: 'CRM',
+    icon: Headset,
+    items: [
+      { title: 'Dashboard', href: '/crm/dashboard', permission: 'crm.view' },
+      { title: 'Customers', href: '/crm/customers', permission: 'crm.view' },
+      { title: 'Interactions', href: '/crm/interactions', permission: 'crm.view' },
+      { title: 'Cases', href: '/crm/cases', permission: 'crm.view' },
+      { title: 'Follow-ups', href: '/crm/follow-ups', permission: 'crm.view' },
     ],
   },
   {

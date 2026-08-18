@@ -18,6 +18,7 @@ import typingTestsRoutes from '../modules/typing-tests/typing-tests.routes';
 import numberMemoryRoutes from '../modules/number-memory/number-memory.routes';
 import aiRoutes from '../modules/ai/ai.routes';
 import projectsRoutes, { workItemsRouter } from '../modules/projects/projects.routes';
+import crmRoutes from '../modules/crm/crm.routes';
 
 const router = Router();
 
@@ -45,5 +46,6 @@ router.use('/number-memory', numberMemoryRoutes);
 router.use('/ai', aiRoutes);
 router.use('/projects', projectsRoutes);
 router.use('/work-items', workItemsRouter);
+router.use('/crm', crmRoutes);
 
 export default router;

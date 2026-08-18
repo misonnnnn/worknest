@@ -38,6 +38,9 @@ type ResourceListProps<T> = {
   queryExtras?: Record<string, string | number | boolean | undefined>;
   actions?: (item: T) => React.ReactNode;
   pageSize?: number;
+  onRowClick?: (item: T) => void;
+  headerActions?: React.ReactNode;
+  searchPlaceholder?: string;
 };
 
 export function ResourceListPage<T extends { id: string }>({
@@ -53,6 +56,9 @@ export function ResourceListPage<T extends { id: string }>({
   queryExtras,
   actions,
   pageSize = 10,
+  onRowClick,
+  headerActions,
+  searchPlaceholder = 'Search…',
 }: ResourceListProps<T>) {
   const { can } = useAuth();
   const [search, setSearch] = useState('');
@@ -91,10 +97,15 @@ export function ResourceListPage<T extends { id: string }>({
         title={title}
         description={description}
         actions={
-          canCreate && onCreate ? (
-            <Button size="sm" onClick={onCreate}>
-              {createLabel ?? 'Create'}
-            </Button>
+          headerActions || (canCreate && onCreate) ? (
+            <div className="flex items-center gap-2">
+              {headerActions}
+              {canCreate && onCreate ? (
+                <Button size="sm" onClick={onCreate}>
+                  {createLabel ?? 'Create'}
+                </Button>
+              ) : null}
+            </div>
           ) : undefined
         }
       />
@@ -102,7 +113,7 @@ export function ResourceListPage<T extends { id: string }>({
       <Card className="gap-0 overflow-hidden py-0 shadow-none">
         <div className="flex flex-col gap-2 border-b p-3 sm:flex-row sm:items-center">
           <Input
-            placeholder="Search…"
+            placeholder={searchPlaceholder}
             value={search}
             onChange={(e) => {
               setPage(1);
@@ -159,7 +170,11 @@ export function ResourceListPage<T extends { id: string }>({
               </TableHeader>
               <TableBody>
                 {data.items.map((item: T) => (
-                  <TableRow key={item.id}>
+                  <TableRow
+                    key={item.id}
+                    className={onRowClick ? 'cursor-pointer' : undefined}
+                    onClick={onRowClick ? () => onRowClick(item) : undefined}
+                  >
                     {columns.map((col) => (
                       <TableCell
                         key={col.key}
@@ -169,7 +184,12 @@ export function ResourceListPage<T extends { id: string }>({
                       </TableCell>
                     ))}
                     {actions ? (
-                      <TableCell className="py-2.5 text-right">{actions(item)}</TableCell>
+                      <TableCell
+                        className="py-2.5 text-right"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {actions(item)}
+                      </TableCell>
                     ) : null}
                   </TableRow>
                 ))}

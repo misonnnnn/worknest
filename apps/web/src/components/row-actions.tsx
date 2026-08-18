@@ -32,6 +32,7 @@ const ACTION_ICONS = {
   approve: Check,
   reject: X,
   cancel: Ban,
+  complete: Check,
   'convert to po': FileInput,
   receive: PackageCheck,
   permissions: Shield,

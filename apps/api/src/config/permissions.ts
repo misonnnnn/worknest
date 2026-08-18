@@ -198,6 +198,42 @@ export const PERMISSIONS = [
     action: 'delete',
     description: 'Delete work items',
   },
+  {
+    key: 'crm.view',
+    resource: 'crm',
+    action: 'view',
+    description: 'View CRM customers, interactions, cases, and follow-ups',
+  },
+  {
+    key: 'crm.create',
+    resource: 'crm',
+    action: 'create',
+    description: 'Create CRM customers and interactions',
+  },
+  {
+    key: 'crm.update',
+    resource: 'crm',
+    action: 'update',
+    description: 'Edit CRM customers and interactions',
+  },
+  {
+    key: 'crm.delete',
+    resource: 'crm',
+    action: 'delete',
+    description: 'Delete CRM records',
+  },
+  {
+    key: 'crm.manage_cases',
+    resource: 'crm',
+    action: 'manage_cases',
+    description: 'Create and manage CRM cases',
+  },
+  {
+    key: 'crm.manage_followups',
+    resource: 'crm',
+    action: 'manage_followups',
+    description: 'Create and manage CRM follow-ups',
+  },
 ] as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[number]['key'];
