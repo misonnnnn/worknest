@@ -67,7 +67,7 @@ export const customersService = {
         },
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
-        orderBy: [{ storeName: 'asc' }, { name: 'asc' }],
+        orderBy: { name: 'asc' },
       }),
     ]);
 
@@ -123,6 +123,9 @@ export const customersService = {
         date: item.interactionDate,
         title: item.interactionType.replace(/_/g, ' '),
         subtitle: item.inquiry,
+        store: item.store,
+        storeOther: item.storeOther,
+        orderNumber: item.orderNumber,
         status: item.status,
         agent: mapUserRef(item.agent),
         hrefId: item.id,

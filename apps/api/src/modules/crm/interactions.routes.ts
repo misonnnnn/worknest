@@ -1,13 +1,6 @@
 import { z } from 'zod';
 import { Router } from 'express';
 import type { Request, Response } from 'express';
-import {
-  CrmChannel,
-  CrmInteractionStatus,
-  CrmInteractionType,
-  CrmPriority,
-  CrmResolution,
-} from '@prisma/client';
 import { prisma } from '../../lib/prisma';
 import { badRequest, conflict, notFound } from '../../lib/errors';
 import { writeAuditLog } from '../../lib/audit';
@@ -23,9 +16,16 @@ import {
   interactionInclude,
   mapInteraction,
   mapUserRef,
+  CHANNELS,
+  INTERACTION_STATUSES,
+  INTERACTION_TYPES,
   nextInteractionNumber,
   parseDuration,
+  PRIORITIES,
+  RESOLUTIONS,
   startOfDay,
+  STORES,
+  storeLabel,
   userRefSelect,
 } from './helpers';
 
@@ -36,10 +36,12 @@ const listSchema = z.object({
   customerId: z.string().uuid().optional(),
   caseId: z.string().uuid().optional(),
   agentId: z.string().uuid().optional(),
-  status: z.nativeEnum(CrmInteractionStatus).optional(),
-  priority: z.nativeEnum(CrmPriority).optional(),
-  channel: z.nativeEnum(CrmChannel).optional(),
-  interactionType: z.nativeEnum(CrmInteractionType).optional(),
+  status: z.enum(INTERACTION_STATUSES).optional(),
+  priority: z.enum(PRIORITIES).optional(),
+  channel: z.enum(CHANNELS).optional(),
+  interactionType: z.enum(INTERACTION_TYPES).optional(),
+  store: z.enum(STORES).optional(),
+  orderNumber: z.string().optional(),
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
 });
@@ -57,15 +59,18 @@ const createSchema = z.object({
   customerId: z.string().uuid(),
   caseId: z.string().uuid().optional().nullable(),
   agentId: z.string().uuid().optional(),
-  channel: z.nativeEnum(CrmChannel),
-  interactionType: z.nativeEnum(CrmInteractionType),
+  store: z.enum(STORES),
+  storeOther: z.string().max(150).optional().nullable(),
+  orderNumber: z.string().max(80).optional().nullable(),
+  channel: z.enum(CHANNELS),
+  interactionType: z.enum(INTERACTION_TYPES),
   interactionDate: z.coerce.date().optional(),
   duration: z.union([z.string(), z.number()]).optional().nullable(),
   inquiry: z.string().min(1).max(4000),
   notes: z.string().max(8000).optional().nullable(),
-  resolution: z.nativeEnum(CrmResolution).optional().nullable(),
-  status: z.nativeEnum(CrmInteractionStatus).optional().default('COMPLETED'),
-  priority: z.nativeEnum(CrmPriority).optional().default('NORMAL'),
+  resolution: z.enum(RESOLUTIONS).optional().nullable(),
+  status: z.enum(INTERACTION_STATUSES).optional().default('COMPLETED'),
+  priority: z.enum(PRIORITIES).optional().default('NORMAL'),
   followUp: followUpInputSchema.optional().nullable(),
 });
 
@@ -87,6 +92,8 @@ function listWhere(query: z.infer<typeof listSchema>) {
               { interactionNumber: { contains: query.search, mode: 'insensitive' as const } },
               { inquiry: { contains: query.search, mode: 'insensitive' as const } },
               { notes: { contains: query.search, mode: 'insensitive' as const } },
+              { orderNumber: { contains: query.search, mode: 'insensitive' as const } },
+              { storeOther: { contains: query.search, mode: 'insensitive' as const } },
               { case: { caseNumber: { contains: query.search, mode: 'insensitive' as const } } },
               { customer: customerSearchWhere(query.search) },
             ],
@@ -99,6 +106,10 @@ function listWhere(query: z.infer<typeof listSchema>) {
       query.priority ? { priority: query.priority } : {},
       query.channel ? { channel: query.channel } : {},
       query.interactionType ? { interactionType: query.interactionType } : {},
+      query.store ? { store: query.store } : {},
+      query.orderNumber
+        ? { orderNumber: { contains: query.orderNumber, mode: 'insensitive' as const } }
+        : {},
       dateFrom || dateTo
         ? {
             interactionDate: {
@@ -123,6 +134,13 @@ async function assertCase(id: string | null | undefined, customerId?: string) {
   if (customerId && crmCase.customerId !== customerId) {
     throw badRequest('Case does not belong to this customer');
   }
+}
+
+function normalizeStore(store: (typeof STORES)[number], storeOther?: string | null) {
+  return {
+    store,
+    storeOther: store === 'OTHER' ? storeOther?.trim() || null : null,
+  };
 }
 
 async function assertAgent(id: string) {
@@ -164,6 +182,7 @@ export const interactionsService = {
       'Date',
       'Customer',
       'Store',
+      'Order Number',
       'Phone',
       'Email',
       'Channel',
@@ -183,7 +202,8 @@ export const interactionsService = {
         item.interactionNumber,
         item.interactionDate.toISOString(),
         item.customer.name,
-        item.customer.storeName ?? '',
+        storeLabel(item.store, item.storeOther),
+        item.orderNumber ?? '',
         item.customer.phone ?? '',
         item.customer.email ?? '',
         item.channel,
@@ -244,6 +264,7 @@ export const interactionsService = {
     if (input.duration != null && input.duration !== '' && durationSeconds === null) {
       throw badRequest('Duration must look like 2:16 or a number of seconds');
     }
+    const storeData = normalizeStore(input.store, input.storeOther);
 
     const created = await prisma.$transaction(async (tx) => {
       const interaction = await tx.crmInteraction.create({
@@ -252,6 +273,8 @@ export const interactionsService = {
           customerId: input.customerId,
           caseId: input.caseId || null,
           agentId,
+          ...storeData,
+          orderNumber: input.orderNumber?.trim() || null,
           channel: input.channel,
           interactionType: input.interactionType,
           interactionDate: input.interactionDate ?? new Date(),
@@ -308,6 +331,13 @@ export const interactionsService = {
     if (input.caseId !== undefined) await assertCase(input.caseId, customerId);
     if (input.agentId) await assertAgent(input.agentId);
 
+    const storeData =
+      input.store !== undefined
+        ? normalizeStore(input.store, input.storeOther ?? existing.storeOther)
+        : input.storeOther !== undefined
+          ? normalizeStore(existing.store, input.storeOther)
+          : null;
+
     let durationSeconds: number | null | undefined;
     if (input.duration !== undefined) {
       durationSeconds = parseDuration(input.duration);
@@ -322,6 +352,8 @@ export const interactionsService = {
         ...(input.customerId ? { customerId: input.customerId } : {}),
         ...(input.caseId !== undefined ? { caseId: input.caseId || null } : {}),
         ...(input.agentId ? { agentId: input.agentId } : {}),
+        ...(storeData ?? {}),
+        ...(input.orderNumber !== undefined ? { orderNumber: input.orderNumber?.trim() || null } : {}),
         ...(input.channel ? { channel: input.channel } : {}),
         ...(input.interactionType ? { interactionType: input.interactionType } : {}),
         ...(input.interactionDate ? { interactionDate: input.interactionDate } : {}),

@@ -15,13 +15,19 @@ import {
 import { apiRequest, ApiClientError } from '@/lib/api';
 import {
   INTERACTION_TYPE_LABELS,
+  STORE_LABELS,
+  STORE_OPTIONS,
   customerTitle,
   formatDateTime,
   previewText,
+  selectClassName,
+  storeLabel,
   type CrmCustomerDetail,
   type CrmCustomerRow,
   type CrmLookups,
 } from '@/lib/crm';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -35,6 +41,8 @@ export default function CrmCustomerProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
+  const [storeFilter, setStoreFilter] = useState('');
+  const [orderFilter, setOrderFilter] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -78,6 +86,16 @@ export default function CrmCustomerProfilePage() {
   }
 
   const preset = customer as CrmCustomerRow;
+  const filteredActivity = customer.activity.filter((item) => {
+    if (!storeFilter && !orderFilter.trim()) return true;
+    if (item.type !== 'interaction') return false;
+    if (storeFilter && item.store !== storeFilter) return false;
+    if (orderFilter.trim()) {
+      const q = orderFilter.trim().toLowerCase();
+      if (!(item.orderNumber ?? '').toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
 
   return (
     <div>
@@ -105,10 +123,6 @@ export default function CrmCustomerProfilePage() {
                 {customer.name}
               </p>
               <p>
-                <span className="text-muted-foreground">Store: </span>
-                {customer.storeName || '—'}
-              </p>
-              <p>
                 <span className="text-muted-foreground">Phone: </span>
                 {customer.phone || '—'}
               </p>
@@ -127,12 +141,39 @@ export default function CrmCustomerProfilePage() {
             <CardHeader>
               <CardTitle className="text-sm">Customer activity</CardTitle>
             </CardHeader>
-            <CardContent>
-              {customer.activity.length === 0 ? (
+            <CardContent className="space-y-4">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="storeFilter">Store</Label>
+                  <select
+                    id="storeFilter"
+                    className={selectClassName}
+                    value={storeFilter}
+                    onChange={(e) => setStoreFilter(e.target.value)}
+                  >
+                    <option value="">All stores</option>
+                    {STORE_OPTIONS.map((value) => (
+                      <option key={value} value={value}>
+                        {STORE_LABELS[value]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="orderFilter">Order number</Label>
+                  <Input
+                    id="orderFilter"
+                    value={orderFilter}
+                    onChange={(e) => setOrderFilter(e.target.value)}
+                    placeholder="Filter by order…"
+                  />
+                </div>
+              </div>
+              {filteredActivity.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No CRM activity yet.</p>
               ) : (
                 <ol className="space-y-4">
-                  {customer.activity.map((item) => {
+                  {filteredActivity.map((item) => {
                     const href =
                       item.type === 'interaction'
                         ? `/crm/interactions/${item.hrefId}`
@@ -147,6 +188,12 @@ export default function CrmCustomerProfilePage() {
                           <p className="text-sm font-medium">
                             {item.agent?.displayName ?? 'Unassigned'} · {item.title}
                           </p>
+                          {item.type === 'interaction' ? (
+                            <p className="text-xs text-muted-foreground">
+                              {storeLabel(item.store, item.storeOther)}
+                              {item.orderNumber ? ` · Order ${item.orderNumber}` : ''}
+                            </p>
+                          ) : null}
                           <p className="text-sm text-muted-foreground">
                             {previewText(item.subtitle, 100)}
                           </p>

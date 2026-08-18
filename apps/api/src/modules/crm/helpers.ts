@@ -1,4 +1,3 @@
-import type { Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma';
 
 export const userRefSelect = {
@@ -59,7 +58,15 @@ export const followUpInclude = {
 } as const;
 
 export function mapInteraction(row: {
-  customer: Prisma.CustomerGetPayload<{ select: typeof customerRefSelect }>;
+  customer: {
+    id: string;
+    code: string;
+    name: string;
+    storeName: string | null;
+    phone: string | null;
+    email: string | null;
+    address: string | null;
+  };
   case: { id: string; caseNumber: string; subject: string; status: string } | null;
   agent: UserRefRecord;
   durationSeconds: number | null;
@@ -155,11 +162,10 @@ export function csvEscape(value: unknown) {
   return s;
 }
 
-export function customerSearchWhere(search: string): Prisma.CustomerWhereInput {
+export function customerSearchWhere(search: string) {
   return {
     OR: [
       { name: { contains: search, mode: 'insensitive' } },
-      { storeName: { contains: search, mode: 'insensitive' } },
       { phone: { contains: search, mode: 'insensitive' } },
       { email: { contains: search, mode: 'insensitive' } },
       { code: { contains: search, mode: 'insensitive' } },
@@ -194,3 +200,45 @@ export const PRIORITIES = ['LOW', 'NORMAL', 'HIGH', 'URGENT'] as const;
 export const CASE_STATUSES = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'CANCELLED'] as const;
 export const FOLLOW_UP_STATUSES = ['PENDING', 'COMPLETED', 'CANCELLED'] as const;
 export const FOLLOW_UP_TYPES = ['CALL', 'EMAIL', 'VISIT', 'OTHER'] as const;
+export const STORES = [
+  'PHARMACY_DIRECT',
+  'CHEMPRO',
+  'CHEMIST_OUTLET',
+  'CHEMIST_AUSTRALIA',
+  'OTHER',
+] as const;
+
+export const STORE_LABELS: Record<(typeof STORES)[number], string> = {
+  PHARMACY_DIRECT: 'Pharmacy Direct',
+  CHEMPRO: 'Chempro',
+  CHEMIST_OUTLET: 'Chemist Outlet',
+  CHEMIST_AUSTRALIA: 'Chemist Australia',
+  OTHER: 'Others',
+};
+
+export function storeLabel(
+  store: string | null | undefined,
+  storeOther?: string | null,
+) {
+  if (store === 'OTHER') return storeOther?.trim() || STORE_LABELS.OTHER;
+  if (store && store in STORE_LABELS) {
+    return STORE_LABELS[store as (typeof STORES)[number]];
+  }
+  return storeOther?.trim() || '—';
+}
+
+export function mapStoreFromText(value?: string | null): {
+  store: (typeof STORES)[number];
+  storeOther: string | null;
+} {
+  if (!value?.trim()) return { store: 'OTHER', storeOther: null };
+  const text = value.trim().toLowerCase();
+  if (text.includes('pharmacy direct')) return { store: 'PHARMACY_DIRECT', storeOther: null };
+  if (text.includes('chempro')) return { store: 'CHEMPRO', storeOther: null };
+  if (text.includes('chemist outlet')) return { store: 'CHEMIST_OUTLET', storeOther: null };
+  if (text.includes('chemist australia') || text.includes('chemist austrialia')) {
+    return { store: 'CHEMIST_AUSTRALIA', storeOther: null };
+  }
+  if (text === 'other' || text === 'others') return { store: 'OTHER', storeOther: null };
+  return { store: 'OTHER', storeOther: value.trim() };
+}

@@ -13,6 +13,8 @@ import {
   INTERACTION_TYPE_LABELS,
   PRIORITY_LABELS,
   RESOLUTION_LABELS,
+  STORE_LABELS,
+  STORE_OPTIONS,
   customerTitle,
   selectClassName,
   textareaClassName,
@@ -26,6 +28,7 @@ import {
   type CrmLookups,
   type CrmPriority,
   type CrmResolution,
+  type CrmStore,
 } from '@/lib/crm';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -42,6 +45,9 @@ import { Label } from '@/components/ui/label';
 export type InteractionFormState = {
   customerId: string;
   agentId: string;
+  store: CrmStore | '';
+  storeOther: string;
+  orderNumber: string;
   channel: CrmChannel;
   interactionType: CrmInteractionType;
   interactionDate: string;
@@ -61,6 +67,9 @@ export type InteractionFormState = {
 const emptyForm = (userId: string): InteractionFormState => ({
   customerId: '',
   agentId: userId,
+  store: '',
+  storeOther: '',
+  orderNumber: '',
   channel: 'PHONE',
   interactionType: 'INBOUND_CALL',
   interactionDate: toDateTimeLocal(),
@@ -114,6 +123,9 @@ export function InteractionFormDialog({
         ...next,
         customerId: editing.customerId,
         agentId: editing.agentId,
+        store: editing.store,
+        storeOther: editing.storeOther ?? '',
+        orderNumber: editing.orderNumber ?? '',
         channel: editing.channel,
         interactionType: editing.interactionType,
         interactionDate: toDateTimeLocal(editing.interactionDate),
@@ -171,6 +183,10 @@ export function InteractionFormDialog({
       setError('Select a customer first.');
       return;
     }
+    if (!form.store) {
+      setError('Select a store.');
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -178,6 +194,9 @@ export function InteractionFormDialog({
         customerId: form.customerId,
         caseId: editing?.caseId || presetCaseId || undefined,
         agentId: form.agentId || undefined,
+        store: form.store,
+        storeOther: form.store === 'OTHER' ? form.storeOther.trim() : null,
+        orderNumber: form.orderNumber.trim() || null,
         channel: form.channel,
         interactionType: form.interactionType,
         interactionDate: new Date(form.interactionDate).toISOString(),
@@ -236,10 +255,6 @@ export function InteractionFormDialog({
             {customer ? (
               <div className="grid gap-1 rounded-md bg-muted/50 px-3 py-2 text-sm sm:grid-cols-2">
                 <p>
-                  <span className="text-muted-foreground">Store: </span>
-                  {customer.storeName || '—'}
-                </p>
-                <p>
                   <span className="text-muted-foreground">Name: </span>
                   {customer.name}
                 </p>
@@ -258,6 +273,45 @@ export function InteractionFormDialog({
           <section className="space-y-3 rounded-lg border p-3">
             <h3 className="text-sm font-medium">Interaction</h3>
             <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="store">Store</Label>
+                <select
+                  id="store"
+                  className={selectClassName}
+                  required
+                  value={form.store}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, store: e.target.value as CrmStore | '' }))
+                  }
+                >
+                  <option value="">Select store…</option>
+                  {(lookups?.stores ?? STORE_OPTIONS).map((value) => (
+                    <option key={value} value={value}>
+                      {STORE_LABELS[value]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {form.store === 'OTHER' ? (
+                <div className="space-y-1.5">
+                  <Label htmlFor="storeOther">Store name</Label>
+                  <Input
+                    id="storeOther"
+                    value={form.storeOther}
+                    onChange={(e) => setForm((prev) => ({ ...prev, storeOther: e.target.value }))}
+                    placeholder="Enter store name"
+                  />
+                </div>
+              ) : null}
+              <div className="space-y-1.5">
+                <Label htmlFor="orderNumber">Order number</Label>
+                <Input
+                  id="orderNumber"
+                  value={form.orderNumber}
+                  onChange={(e) => setForm((prev) => ({ ...prev, orderNumber: e.target.value }))}
+                  placeholder="Optional"
+                />
+              </div>
               <div className="space-y-1.5">
                 <Label htmlFor="channel">Channel</Label>
                 <select

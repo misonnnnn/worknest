@@ -15,6 +15,7 @@ import {
   INTERACTION_TYPE_LABELS,
   RESOLUTION_LABELS,
   customerTitle,
+  storeLabel,
   formatDateTime,
   selectClassName,
   textareaClassName,
@@ -198,6 +199,8 @@ export default function CrmInteractionDetailPage() {
               <CardTitle className="text-sm">Interaction</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2 text-sm sm:grid-cols-2">
+              <p>Store: {storeLabel(item.store, item.storeOther)}</p>
+              <p>Order: {item.orderNumber || '—'}</p>
               <p>{INTERACTION_TYPE_LABELS[item.interactionType]}</p>
               <p>{CHANNEL_LABELS[item.channel]}</p>
               <p>{formatDateTime(item.interactionDate)}</p>

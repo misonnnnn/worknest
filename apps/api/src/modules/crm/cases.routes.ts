@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { Router } from 'express';
 import type { Request, Response } from 'express';
-import { CrmCaseStatus, CrmPriority } from '@prisma/client';
 import { prisma } from '../../lib/prisma';
 import { conflict, notFound } from '../../lib/errors';
 import { writeAuditLog } from '../../lib/audit';
@@ -17,7 +16,9 @@ import {
   mapFollowUp,
   mapInteraction,
   mapUserRef,
+  CASE_STATUSES,
   nextCaseNumber,
+  PRIORITIES,
   userRefSelect,
   followUpInclude,
 } from './helpers';
@@ -28,8 +29,8 @@ const listSchema = z.object({
   search: z.string().optional(),
   customerId: z.string().uuid().optional(),
   assignedToId: z.string().uuid().optional(),
-  status: z.nativeEnum(CrmCaseStatus).optional(),
-  priority: z.nativeEnum(CrmPriority).optional(),
+  status: z.enum(CASE_STATUSES).optional(),
+  priority: z.enum(PRIORITIES).optional(),
 });
 
 const uuidParamSchema = z.object({ id: z.string().uuid() });
@@ -38,14 +39,18 @@ const createSchema = z.object({
   customerId: z.string().uuid(),
   subject: z.string().min(1).max(200),
   description: z.string().max(4000).optional().nullable(),
-  priority: z.nativeEnum(CrmPriority).optional().default('NORMAL'),
-  status: z.nativeEnum(CrmCaseStatus).optional().default('OPEN'),
+  priority: z.enum(PRIORITIES).optional().default('NORMAL'),
+  status: z.enum(CASE_STATUSES).optional().default('OPEN'),
   assignedToId: z.string().uuid().optional().nullable(),
 });
 
 const updateSchema = createSchema.partial().omit({ customerId: true });
 
-const CLOSED_STATUSES: CrmCaseStatus[] = ['RESOLVED', 'CLOSED', 'CANCELLED'];
+const CLOSED_STATUSES: Array<(typeof CASE_STATUSES)[number]> = [
+  'RESOLVED',
+  'CLOSED',
+  'CANCELLED',
+];
 
 export const casesService = {
   async list(query: z.infer<typeof listSchema>) {

@@ -22,7 +22,6 @@ import { Label } from '@/components/ui/label';
 
 type CustomerFormState = {
   name: string;
-  storeName: string;
   phone: string;
   email: string;
   address: string;
@@ -32,7 +31,6 @@ type CustomerFormState = {
 
 const emptyForm: CustomerFormState = {
   name: '',
-  storeName: '',
   phone: '',
   email: '',
   address: '',
@@ -64,7 +62,6 @@ export default function CrmCustomersPage() {
     setEditing(customer);
     setForm({
       name: customer.name,
-      storeName: customer.storeName ?? '',
       phone: customer.phone ?? '',
       email: customer.email ?? '',
       address: customer.address ?? '',
@@ -82,7 +79,6 @@ export default function CrmCustomersPage() {
     try {
       const body = {
         name: form.name,
-        storeName: form.storeName || null,
         phone: form.phone || null,
         email: form.email || null,
         address: form.address || null,
@@ -123,17 +119,16 @@ export default function CrmCustomersPage() {
       <ResourceListPage<CrmCustomerRow>
         key={reloadKey}
         title="Customers"
-        description="People and stores CSRs talk to."
+        description="People CSRs talk to across Pharmacy Direct, Chempro, Chemist Outlet, and Chemist Australia."
         endpoint="/crm/customers"
         permission="crm.view"
-        searchPlaceholder="Search name, store, phone, email…"
+        searchPlaceholder="Search name, phone, email…"
         canCreate={can('crm.create')}
         createLabel="New customer"
         onCreate={openCreate}
         onRowClick={(customer) => router.push(`/crm/customers/${customer.id}`)}
         columns={[
           { key: 'code', header: 'Code', render: (c) => <span className="mono text-xs">{c.code}</span> },
-          { key: 'store', header: 'Store', render: (c) => c.storeName || '—' },
           { key: 'name', header: 'Customer', render: (c) => c.name },
           { key: 'phone', header: 'Phone', render: (c) => c.phone || '—' },
           { key: 'email', header: 'Email', render: (c) => c.email || '—' },
@@ -171,14 +166,6 @@ export default function CrmCustomersPage() {
           </DialogHeader>
           <form className="space-y-3" onSubmit={onSave}>
             {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
-            <div className="space-y-1.5">
-              <Label htmlFor="storeName">Store name</Label>
-              <Input
-                id="storeName"
-                value={form.storeName}
-                onChange={(e) => setForm((prev) => ({ ...prev, storeName: e.target.value }))}
-              />
-            </div>
             <div className="space-y-1.5">
               <Label htmlFor="name">Customer name</Label>
               <Input

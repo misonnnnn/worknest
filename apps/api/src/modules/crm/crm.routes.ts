@@ -1,14 +1,6 @@
 import { z } from 'zod';
 import { Router } from 'express';
 import type { Request, Response } from 'express';
-import {
-  CrmCaseStatus,
-  CrmChannel,
-  CrmInteractionStatus,
-  CrmInteractionType,
-  CrmPriority,
-  CrmResolution,
-} from '@prisma/client';
 import { prisma } from '../../lib/prisma';
 import { asyncHandler, validateRequest } from '../../lib/http';
 import { requireAuth, requireAnyPermission, requirePermission } from '../../middleware/auth';
@@ -24,7 +16,9 @@ import {
   INTERACTION_TYPES,
   PRIORITIES,
   RESOLUTIONS,
+  STORES,
   endOfDay,
+  mapStoreFromText,
   followUpInclude,
   interactionInclude,
   mapFollowUp,
@@ -58,6 +52,7 @@ const importRecordSchema = z.object({
   agentEmail: z.string().optional().nullable(),
   agentName: z.string().optional().nullable(),
   interactionDate: z.coerce.date().optional().nullable(),
+  orderNumber: z.string().optional().nullable(),
 });
 
 const importSchema = z.object({
@@ -184,7 +179,7 @@ export const crmService = {
         where: { interactionDate: { gte: todayStart, lte: todayEnd } },
       }),
       prisma.crmCase.count({
-        where: { status: { in: [CrmCaseStatus.OPEN, CrmCaseStatus.IN_PROGRESS] } },
+        where: { status: { in: ['OPEN', 'IN_PROGRESS'] } },
       }),
       prisma.crmFollowUp.count({ where: { status: 'PENDING' } }),
       prisma.crmInteraction.count({
@@ -234,6 +229,7 @@ export const crmService = {
       caseStatuses: CASE_STATUSES,
       followUpStatuses: FOLLOW_UP_STATUSES,
       followUpTypes: FOLLOW_UP_TYPES,
+      stores: STORES,
     };
   },
 
@@ -301,26 +297,29 @@ export const crmService = {
         if (created) report.createdCustomers += 1;
         else report.matchedCustomers += 1;
 
+        const storeData = mapStoreFromText(record.storeName);
         await prisma.crmInteraction.create({
           data: {
             interactionNumber: await nextInteractionNumber(),
             customerId: customer.id,
             agentId,
-            channel: mapEnum(record.channel, CHANNELS, 'PHONE') as CrmChannel,
+            ...storeData,
+            orderNumber: record.orderNumber?.trim() || null,
+            channel: mapEnum(record.channel, CHANNELS, 'PHONE'),
             interactionType: mapEnum(
               record.interactionType,
               INTERACTION_TYPES,
               'INBOUND_CALL',
-            ) as CrmInteractionType,
+            ),
             interactionDate: record.interactionDate ?? new Date(),
             durationSeconds: parseDuration(record.duration),
             inquiry: record.inquiry?.trim() || 'Imported from legacy CRM',
             notes: record.notes?.trim() || null,
             resolution: record.resolution
-              ? (mapEnum(record.resolution, RESOLUTIONS, 'OTHER') as CrmResolution)
+              ? mapEnum(record.resolution, RESOLUTIONS, 'OTHER')
               : null,
-            status: mapEnum(record.status, INTERACTION_STATUSES, 'COMPLETED') as CrmInteractionStatus,
-            priority: mapEnum(record.priority, PRIORITIES, 'NORMAL') as CrmPriority,
+            status: mapEnum(record.status, INTERACTION_STATUSES, 'COMPLETED'),
+            priority: mapEnum(record.priority, PRIORITIES, 'NORMAL'),
             legacySource: LEGACY_SOURCE,
             legacyRecordId,
           },

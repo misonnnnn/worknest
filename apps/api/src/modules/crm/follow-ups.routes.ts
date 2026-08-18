@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { Router } from 'express';
 import type { Request, Response } from 'express';
-import { CrmFollowUpStatus, CrmFollowUpType } from '@prisma/client';
 import { prisma } from '../../lib/prisma';
 import { notFound } from '../../lib/errors';
 import { writeAuditLog } from '../../lib/audit';
@@ -9,7 +8,13 @@ import { buildPagination, getClientMeta } from '../../utils/helpers';
 import { asyncHandler, validateRequest } from '../../lib/http';
 import { requireAuth, requireAnyPermission, requirePermission } from '../../middleware/auth';
 import { sendSuccess } from '../../lib/response';
-import { customerSearchWhere, followUpInclude, mapFollowUp } from './helpers';
+import {
+  customerSearchWhere,
+  FOLLOW_UP_STATUSES,
+  FOLLOW_UP_TYPES,
+  followUpInclude,
+  mapFollowUp,
+} from './helpers';
 
 const listSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -17,7 +22,7 @@ const listSchema = z.object({
   search: z.string().optional(),
   customerId: z.string().uuid().optional(),
   assignedToId: z.string().uuid().optional(),
-  status: z.nativeEnum(CrmFollowUpStatus).optional(),
+  status: z.enum(FOLLOW_UP_STATUSES).optional(),
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
 });
@@ -30,9 +35,9 @@ const createSchema = z.object({
   caseId: z.string().uuid().optional().nullable(),
   assignedToId: z.string().uuid().optional(),
   followUpDate: z.coerce.date(),
-  followUpType: z.nativeEnum(CrmFollowUpType).optional().default('CALL'),
+  followUpType: z.enum(FOLLOW_UP_TYPES).optional().default('CALL'),
   notes: z.string().max(2000).optional().nullable(),
-  status: z.nativeEnum(CrmFollowUpStatus).optional().default('PENDING'),
+  status: z.enum(FOLLOW_UP_STATUSES).optional().default('PENDING'),
 });
 
 const updateSchema = createSchema.partial().omit({ customerId: true });

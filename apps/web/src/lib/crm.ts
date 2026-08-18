@@ -20,6 +20,12 @@ export type CrmPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
 export type CrmCaseStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED' | 'CANCELLED';
 export type CrmFollowUpStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED';
 export type CrmFollowUpType = 'CALL' | 'EMAIL' | 'VISIT' | 'OTHER';
+export type CrmStore =
+  | 'PHARMACY_DIRECT'
+  | 'CHEMPRO'
+  | 'CHEMIST_OUTLET'
+  | 'CHEMIST_AUSTRALIA'
+  | 'OTHER';
 
 export type CrmUserRef = {
   id: string;
@@ -51,6 +57,9 @@ export type CrmActivityItem = {
   date: string;
   title: string;
   subtitle: string | null;
+  store?: CrmStore | null;
+  storeOther?: string | null;
+  orderNumber?: string | null;
   status: string;
   agent: CrmUserRef | null;
   hrefId: string;
@@ -70,6 +79,9 @@ export type CrmInteractionRow = {
   customerId: string;
   caseId: string | null;
   agentId: string;
+  store: CrmStore;
+  storeOther: string | null;
+  orderNumber: string | null;
   channel: CrmChannel;
   interactionType: CrmInteractionType;
   interactionDate: string;
@@ -138,6 +150,7 @@ export type CrmLookups = {
   caseStatuses: CrmCaseStatus[];
   followUpStatuses: CrmFollowUpStatus[];
   followUpTypes: CrmFollowUpType[];
+  stores: CrmStore[];
 };
 
 export type CrmDashboard = {
@@ -223,6 +236,28 @@ export const FOLLOW_UP_TYPE_LABELS: Record<CrmFollowUpType, string> = {
   OTHER: 'Other',
 };
 
+export const STORE_OPTIONS: CrmStore[] = [
+  'PHARMACY_DIRECT',
+  'CHEMPRO',
+  'CHEMIST_OUTLET',
+  'CHEMIST_AUSTRALIA',
+  'OTHER',
+];
+
+export const STORE_LABELS: Record<CrmStore, string> = {
+  PHARMACY_DIRECT: 'Pharmacy Direct',
+  CHEMPRO: 'Chempro',
+  CHEMIST_OUTLET: 'Chemist Outlet',
+  CHEMIST_AUSTRALIA: 'Chemist Australia',
+  OTHER: 'Others',
+};
+
+export function storeLabel(store?: CrmStore | null, storeOther?: string | null) {
+  if (!store) return '—';
+  if (store === 'OTHER') return storeOther?.trim() || STORE_LABELS.OTHER;
+  return STORE_LABELS[store];
+}
+
 export const textareaClassName =
   'min-h-24 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 dark:bg-input/30';
 
@@ -230,7 +265,7 @@ export const selectClassName =
   'h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30';
 
 export function customerTitle(customer: Pick<CrmCustomerRef, 'name' | 'storeName'>) {
-  return customer.storeName || customer.name;
+  return customer.name;
 }
 
 export function previewText(value: string | null | undefined, max = 60) {

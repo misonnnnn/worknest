@@ -14,7 +14,10 @@ import {
   INTERACTION_STATUS_LABELS,
   INTERACTION_TYPE_LABELS,
   PRIORITY_LABELS,
+  STORE_LABELS,
+  STORE_OPTIONS,
   customerTitle,
+  storeLabel,
   downloadInteractionsCsv,
   formatDateTime,
   previewText,
@@ -25,6 +28,7 @@ import {
   type CrmInteractionType,
   type CrmLookups,
   type CrmPriority,
+  type CrmStore,
 } from '@/lib/crm';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +52,7 @@ export default function CrmInteractionsPage() {
   const [priority, setPriority] = useState('');
   const [channel, setChannel] = useState('');
   const [interactionType, setInteractionType] = useState('');
+  const [store, setStore] = useState('');
 
   useEffect(() => {
     void apiRequest<CrmLookups>('/crm/lookups').then(setLookups).catch(() => undefined);
@@ -62,8 +67,9 @@ export default function CrmInteractionsPage() {
       priority: priority || undefined,
       channel: channel || undefined,
       interactionType: interactionType || undefined,
+      store: store || undefined,
     }),
-    [dateFrom, dateTo, agentId, status, priority, channel, interactionType],
+    [dateFrom, dateTo, agentId, status, priority, channel, interactionType, store],
   );
 
   async function onDelete() {
@@ -174,6 +180,14 @@ export default function CrmInteractionsPage() {
                 </option>
               ))}
             </select>
+            <select className={selectClassName} value={store} onChange={(e) => setStore(e.target.value)}>
+              <option value="">All stores</option>
+              {(lookups?.stores ?? STORE_OPTIONS).map((value) => (
+                <option key={value} value={value}>
+                  {STORE_LABELS[value as CrmStore]}
+                </option>
+              ))}
+            </select>
           </div>
         }
         columns={[
@@ -184,6 +198,8 @@ export default function CrmInteractionsPage() {
             render: (i) => <span className="mono text-xs">{i.case?.caseNumber ?? '—'}</span>,
           },
           { key: 'customer', header: 'Customer', render: (i) => customerTitle(i.customer) },
+          { key: 'store', header: 'Store', render: (i) => storeLabel(i.store, i.storeOther) },
+          { key: 'order', header: 'Order', render: (i) => i.orderNumber || '—' },
           { key: 'phone', header: 'Phone', render: (i) => i.customer.phone || '—' },
           { key: 'issue', header: 'Issue', render: (i) => previewText(i.inquiry, 50) },
           { key: 'agent', header: 'Agent', render: (i) => i.agent?.displayName ?? '—' },

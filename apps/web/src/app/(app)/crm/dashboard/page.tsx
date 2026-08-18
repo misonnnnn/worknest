@@ -11,6 +11,7 @@ import {
   customerTitle,
   formatDateTime,
   previewText,
+  storeLabel,
   type CrmDashboard,
 } from '@/lib/crm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -85,7 +86,7 @@ export default function CrmDashboardPage() {
                   <InteractionStatusBadge status={item.status} />
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {formatDateTime(item.interactionDate)} ·{' '}
+                  {formatDateTime(item.interactionDate)} · {storeLabel(item.store, item.storeOther)} ·{' '}
                   {INTERACTION_TYPE_LABELS[item.interactionType]} · {item.agent?.displayName}
                 </p>
                 <p className="mt-1 text-sm">{previewText(item.inquiry, 90)}</p>

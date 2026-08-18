@@ -11,7 +11,6 @@ import { Label } from '@/components/ui/label';
 
 type CreateForm = {
   name: string;
-  storeName: string;
   phone: string;
   email: string;
 };
@@ -42,7 +41,6 @@ export function CustomerPicker({
   const [createError, setCreateError] = useState<string | null>(null);
   const [createForm, setCreateForm] = useState<CreateForm>({
     name: '',
-    storeName: '',
     phone: '',
     email: '',
   });
@@ -66,7 +64,6 @@ export function CustomerPicker({
   function startCreate() {
     setCreateForm({
       name: query.trim(),
-      storeName: '',
       phone: '',
       email: '',
     });
@@ -103,7 +100,6 @@ export function CustomerPicker({
         method: 'POST',
         body: {
           name: createForm.name.trim(),
-          storeName: createForm.storeName.trim() || null,
           phone: createForm.phone.trim() || null,
           email: createForm.email.trim() || null,
         },
@@ -131,7 +127,7 @@ export function CustomerPicker({
         <Input
           value={open && !createOpen ? query : selectedLabel || query}
           disabled={disabled || createOpen}
-          placeholder="Search name, store, phone, or email…"
+          placeholder="Search name, phone, or email…"
           onFocus={() => {
             if (createOpen) return;
             setOpen(true);
@@ -214,14 +210,6 @@ export function CustomerPicker({
         >
           <p className="text-sm font-medium">Create new customer</p>
           {createError ? <p className="text-sm text-destructive">{createError}</p> : null}
-          <div className="space-y-1.5">
-            <Label htmlFor="picker-storeName">Store name</Label>
-            <Input
-              id="picker-storeName"
-              value={createForm.storeName}
-              onChange={(e) => setCreateForm((prev) => ({ ...prev, storeName: e.target.value }))}
-            />
-          </div>
           <div className="space-y-1.5">
             <Label htmlFor="picker-name">Customer name</Label>
             <Input
