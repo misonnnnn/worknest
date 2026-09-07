@@ -107,7 +107,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { title: 'Dashboard', href: '/crm/dashboard', permission: 'crm.view' },
       { title: 'Customers', href: '/crm/customers', permission: 'crm.view' },
-      { title: 'Interactions', href: '/crm/interactions', permission: 'crm.view' },
+      { title: 'Logs', href: '/crm/interactions', permission: 'crm.view' },
       { title: 'Cases', href: '/crm/cases', permission: 'crm.view' },
       { title: 'Follow-ups', href: '/crm/follow-ups', permission: 'crm.view' },
     ],

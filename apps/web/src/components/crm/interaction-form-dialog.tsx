@@ -235,7 +235,7 @@ export function InteractionFormDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{editing ? 'Edit interaction' : 'Add interaction'}</DialogTitle>
+          <DialogTitle>{editing ? 'Edit Log' : 'Add Log'}</DialogTitle>
         </DialogHeader>
         <form className="space-y-5" onSubmit={onSave}>
           {error ? <p className="text-sm text-destructive">{error}</p> : null}

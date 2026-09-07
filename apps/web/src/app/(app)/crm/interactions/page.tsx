@@ -106,7 +106,7 @@ export default function CrmInteractionsPage() {
         permission="crm.view"
         searchPlaceholder="Search customer, phone, email, case ID, inquiry…"
         canCreate={can('crm.create')}
-        createLabel="Add interaction"
+        createLabel="Add Log"
         onCreate={() => {
           setEditing(null);
           setFormOpen(true);

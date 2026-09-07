@@ -105,7 +105,7 @@ export default function CrmCustomerProfilePage() {
         actions={
           can('crm.create') ? (
             <Button size="sm" onClick={() => setFormOpen(true)}>
-              Add interaction
+              Add Log
             </Button>
           ) : undefined
         }
