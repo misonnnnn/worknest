@@ -165,10 +165,10 @@ export function csvEscape(value: unknown) {
 export function customerSearchWhere(search: string) {
   return {
     OR: [
-      { name: { contains: search, mode: 'insensitive' } },
-      { phone: { contains: search, mode: 'insensitive' } },
-      { email: { contains: search, mode: 'insensitive' } },
-      { code: { contains: search, mode: 'insensitive' } },
+      { name: { contains: search, mode: 'insensitive' as const } },
+      { phone: { contains: search, mode: 'insensitive' as const } },
+      { email: { contains: search, mode: 'insensitive' as const } },
+      { code: { contains: search, mode: 'insensitive' as const } },
     ],
   };
 }
