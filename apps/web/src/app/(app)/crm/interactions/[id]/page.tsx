@@ -14,7 +14,8 @@ import {
   FOLLOW_UP_TYPE_LABELS,
   INTERACTION_TYPE_LABELS,
   RESOLUTION_LABELS,
-  customerTitle,
+  interactionCustomerLabel,
+  interactionCustomerPhone,
   storeLabel,
   formatDateTime,
   selectClassName,
@@ -106,7 +107,9 @@ export default function CrmInteractionDetailPage() {
       await apiRequest('/crm/follow-ups', {
         method: 'POST',
         body: {
-          customerId: item.customerId,
+          customerId: item.customerId || null,
+          customerName: item.customerName || item.customer?.name,
+          customerPhone: item.customerPhone || item.customer?.phone || null,
           interactionId: item.id,
           caseId: item.caseId,
           assignedToId: followUpAssignedToId || user?.id,
@@ -154,7 +157,7 @@ export default function CrmInteractionDetailPage() {
     <div>
       <PageHeader
         title={item.interactionNumber}
-        description={customerTitle(item.customer)}
+        description={interactionCustomerLabel(item)}
         actions={
           <div className="flex gap-2">
             {can('crm.update') ? (
@@ -183,14 +186,17 @@ export default function CrmInteractionDetailPage() {
               <CardTitle className="text-sm">Customer</CardTitle>
             </CardHeader>
             <CardContent className="space-y-1 text-sm">
-              <p>
-                <Link className="font-medium underline" href={`/crm/customers/${item.customer.id}`}>
-                  {customerTitle(item.customer)}
-                </Link>
+              <p className="font-medium">
+                {item.customerId ? (
+                  <Link className="underline" href={`/crm/customers/${item.customerId}`}>
+                    {interactionCustomerLabel(item)}
+                  </Link>
+                ) : (
+                  interactionCustomerLabel(item)
+                )}
               </p>
-              <p>{item.customer.name}</p>
-              <p>{item.customer.phone || '—'}</p>
-              <p>{item.customer.email || '—'}</p>
+              <p>Phone: {interactionCustomerPhone(item)}</p>
+              {item.customer?.email ? <p>Email: {item.customer.email}</p> : null}
             </CardContent>
           </Card>
 

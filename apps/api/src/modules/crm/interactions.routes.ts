@@ -55,8 +55,10 @@ const followUpInputSchema = z.object({
   notes: z.string().max(2000).optional().nullable(),
 });
 
-const createSchema = z.object({
-  customerId: z.string().uuid(),
+const interactionBodySchema = z.object({
+  customerId: z.string().uuid().optional().nullable(),
+  customerName: z.string().min(1).max(200),
+  customerPhone: z.string().max(50).optional().nullable(),
   caseId: z.string().uuid().optional().nullable(),
   agentId: z.string().uuid().optional(),
   store: z.enum(STORES),
@@ -74,7 +76,17 @@ const createSchema = z.object({
   followUp: followUpInputSchema.optional().nullable(),
 });
 
-const updateSchema = createSchema.partial().omit({ followUp: true });
+const createSchema = interactionBodySchema.superRefine((value, ctx) => {
+  if (value.caseId && !value.customerId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Linking a case requires a customer record',
+      path: ['customerId'],
+    });
+  }
+});
+
+const updateSchema = interactionBodySchema.partial().omit({ followUp: true });
 
 const commentSchema = z.object({
   comment: z.string().min(1).max(2000),
@@ -95,6 +107,8 @@ function listWhere(query: z.infer<typeof listSchema>) {
               { orderNumber: { contains: query.search, mode: 'insensitive' as const } },
               { storeOther: { contains: query.search, mode: 'insensitive' as const } },
               { case: { caseNumber: { contains: query.search, mode: 'insensitive' as const } } },
+              { customerName: { contains: query.search, mode: 'insensitive' as const } },
+              { customerPhone: { contains: query.search, mode: 'insensitive' as const } },
               { customer: customerSearchWhere(query.search) },
             ],
           }
@@ -201,11 +215,11 @@ export const interactionsService = {
         item.case?.caseNumber ?? '',
         item.interactionNumber,
         item.interactionDate.toISOString(),
-        item.customer.name,
+        mapped.customer.name,
         storeLabel(item.store, item.storeOther),
         item.orderNumber ?? '',
-        item.customer.phone ?? '',
-        item.customer.email ?? '',
+        mapped.customer.phone ?? '',
+        mapped.customer.email ?? '',
         item.channel,
         item.interactionType,
         item.inquiry ?? '',
@@ -255,8 +269,9 @@ export const interactionsService = {
     actorId: string,
     meta: { ipAddress?: string | null; userAgent?: string | null },
   ) {
-    await assertCustomer(input.customerId);
-    await assertCase(input.caseId, input.customerId);
+    const customerId = input.customerId || null;
+    if (customerId) await assertCustomer(customerId);
+    await assertCase(input.caseId, customerId ?? undefined);
     const agentId = input.agentId ?? actorId;
     await assertAgent(agentId);
 
@@ -265,12 +280,16 @@ export const interactionsService = {
       throw badRequest('Duration must look like 2:16 or a number of seconds');
     }
     const storeData = normalizeStore(input.store, input.storeOther);
+    const customerName = input.customerName.trim();
+    const customerPhone = input.customerPhone?.trim() || null;
 
     const created = await prisma.$transaction(async (tx) => {
       const interaction = await tx.crmInteraction.create({
         data: {
           interactionNumber: await nextInteractionNumber(),
-          customerId: input.customerId,
+          customerId,
+          customerName,
+          customerPhone,
           caseId: input.caseId || null,
           agentId,
           ...storeData,
@@ -292,7 +311,9 @@ export const interactionsService = {
         await tx.crmFollowUp.create({
           data: {
             interactionId: interaction.id,
-            customerId: input.customerId,
+            customerId,
+            customerName,
+            customerPhone,
             caseId: input.caseId || null,
             assignedToId: input.followUp.assignedToId ?? agentId,
             followUpDate: input.followUp.followUpDate,
@@ -327,8 +348,9 @@ export const interactionsService = {
     if (!existing) throw notFound('Interaction not found');
 
     if (input.customerId) await assertCustomer(input.customerId);
-    const customerId = input.customerId ?? existing.customerId;
-    if (input.caseId !== undefined) await assertCase(input.caseId, customerId);
+    const customerId =
+      input.customerId !== undefined ? input.customerId || null : existing.customerId;
+    if (input.caseId !== undefined) await assertCase(input.caseId, customerId ?? undefined);
     if (input.agentId) await assertAgent(input.agentId);
 
     const storeData =
@@ -349,7 +371,11 @@ export const interactionsService = {
     const updated = await prisma.crmInteraction.update({
       where: { id },
       data: {
-        ...(input.customerId ? { customerId: input.customerId } : {}),
+        ...(input.customerId !== undefined ? { customerId } : {}),
+        ...(input.customerName !== undefined ? { customerName: input.customerName.trim() } : {}),
+        ...(input.customerPhone !== undefined
+          ? { customerPhone: input.customerPhone?.trim() || null }
+          : {}),
         ...(input.caseId !== undefined ? { caseId: input.caseId || null } : {}),
         ...(input.agentId ? { agentId: input.agentId } : {}),
         ...(storeData ?? {}),

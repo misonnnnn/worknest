@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { prisma } from '../../lib/prisma';
-import { notFound } from '../../lib/errors';
+import { badRequest, notFound } from '../../lib/errors';
 import { writeAuditLog } from '../../lib/audit';
 import { buildPagination, getClientMeta } from '../../utils/helpers';
 import { asyncHandler, validateRequest } from '../../lib/http';
@@ -29,8 +29,10 @@ const listSchema = z.object({
 
 const uuidParamSchema = z.object({ id: z.string().uuid() });
 
-const createSchema = z.object({
-  customerId: z.string().uuid(),
+const followUpBodySchema = z.object({
+  customerId: z.string().uuid().optional().nullable(),
+  customerName: z.string().min(1).max(200).optional().nullable(),
+  customerPhone: z.string().max(50).optional().nullable(),
   interactionId: z.string().uuid().optional().nullable(),
   caseId: z.string().uuid().optional().nullable(),
   assignedToId: z.string().uuid().optional(),
@@ -40,7 +42,19 @@ const createSchema = z.object({
   status: z.enum(FOLLOW_UP_STATUSES).optional().default('PENDING'),
 });
 
-const updateSchema = createSchema.partial().omit({ customerId: true });
+const createSchema = followUpBodySchema.superRefine((value, ctx) => {
+  if (!value.customerId && !value.customerName?.trim() && !value.interactionId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Customer name is required',
+      path: ['customerName'],
+    });
+  }
+});
+
+const updateSchema = followUpBodySchema
+  .partial()
+  .omit({ customerId: true, customerName: true, customerPhone: true });
 
 export const followUpsService = {
   async list(query: z.infer<typeof listSchema>) {
@@ -50,6 +64,8 @@ export const followUpsService = {
           ? {
               OR: [
                 { notes: { contains: query.search, mode: 'insensitive' as const } },
+                { customerName: { contains: query.search, mode: 'insensitive' as const } },
+                { customerPhone: { contains: query.search, mode: 'insensitive' as const } },
                 { customer: customerSearchWhere(query.search) },
               ],
             }
@@ -99,8 +115,16 @@ export const followUpsService = {
     actorId: string,
     meta: { ipAddress?: string | null; userAgent?: string | null },
   ) {
-    const customer = await prisma.customer.findUnique({ where: { id: input.customerId } });
-    if (!customer) throw notFound('Customer not found');
+    const customerId = input.customerId || null;
+    let customerName = input.customerName?.trim() || null;
+    let customerPhone = input.customerPhone?.trim() || null;
+
+    if (customerId) {
+      const customer = await prisma.customer.findUnique({ where: { id: customerId } });
+      if (!customer) throw notFound('Customer not found');
+      customerName = customerName || customer.name;
+      customerPhone = customerPhone || customer.phone;
+    }
 
     const assignedToId = input.assignedToId ?? actorId;
     const user = await prisma.user.findUnique({ where: { id: assignedToId } });
@@ -111,15 +135,23 @@ export const followUpsService = {
         where: { id: input.interactionId },
       });
       if (!interaction) throw notFound('Interaction not found');
+      if (!customerId && !customerName) {
+        customerName = interaction.customerName;
+        customerPhone = customerPhone || interaction.customerPhone;
+      }
     }
     if (input.caseId) {
       const crmCase = await prisma.crmCase.findUnique({ where: { id: input.caseId } });
       if (!crmCase) throw notFound('Case not found');
     }
 
+    if (!customerName) throw badRequest('Customer name is required');
+
     const created = await prisma.crmFollowUp.create({
       data: {
-        customerId: input.customerId,
+        customerId,
+        customerName,
+        customerPhone,
         interactionId: input.interactionId || null,
         caseId: input.caseId || null,
         assignedToId,

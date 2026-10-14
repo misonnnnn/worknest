@@ -76,7 +76,9 @@ export type CrmCustomerDetail = CrmCustomerRow & {
 export type CrmInteractionRow = {
   id: string;
   interactionNumber: string;
-  customerId: string;
+  customerId: string | null;
+  customerName: string;
+  customerPhone: string | null;
   caseId: string | null;
   agentId: string;
   store: CrmStore;
@@ -128,7 +130,9 @@ export type CrmFollowUpRow = {
   id: string;
   interactionId: string | null;
   caseId: string | null;
-  customerId: string;
+  customerId: string | null;
+  customerName: string | null;
+  customerPhone: string | null;
   assignedToId: string;
   followUpDate: string;
   followUpType: CrmFollowUpType;
@@ -264,8 +268,24 @@ export const textareaClassName =
 export const selectClassName =
   'h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30';
 
+/** Inline list filters — auto width so they wrap in a row instead of stacking. */
+export const filterSelectClassName =
+  'h-8 w-auto min-w-[8.5rem] rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30';
+
 export function customerTitle(customer: Pick<CrmCustomerRef, 'name' | 'storeName'>) {
   return customer.name;
+}
+
+export function interactionCustomerLabel(
+  item: Pick<CrmInteractionRow, 'customerName' | 'customerPhone' | 'customer'>,
+) {
+  return item.customer?.name || item.customerName || '—';
+}
+
+export function interactionCustomerPhone(
+  item: Pick<CrmInteractionRow, 'customerPhone' | 'customer'>,
+) {
+  return item.customer?.phone || item.customerPhone || '—';
 }
 
 export function previewText(value: string | null | undefined, max = 60) {

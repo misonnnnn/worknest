@@ -57,24 +57,48 @@ export const followUpInclude = {
   case: { select: { id: true, caseNumber: true, subject: true } },
 } as const;
 
-export function mapInteraction(row: {
-  customer: {
-    id: string;
-    code: string;
-    name: string;
-    storeName: string | null;
-    phone: string | null;
-    email: string | null;
-    address: string | null;
+type CustomerRef = {
+  id: string;
+  code: string;
+  name: string;
+  storeName: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+};
+
+export function resolveCustomerRef(row: {
+  customer?: CustomerRef | null;
+  customerId?: string | null;
+  customerName?: string | null;
+  customerPhone?: string | null;
+}): CustomerRef {
+  if (row.customer) return row.customer;
+  return {
+    id: row.customerId ?? '',
+    code: '',
+    name: row.customerName?.trim() || '—',
+    storeName: null,
+    phone: row.customerPhone?.trim() || null,
+    email: null,
+    address: null,
   };
+}
+
+export function mapInteraction(row: {
+  customer?: CustomerRef | null;
+  customerId?: string | null;
+  customerName?: string | null;
+  customerPhone?: string | null;
   case: { id: string; caseNumber: string; subject: string; status: string } | null;
   agent: UserRefRecord;
   durationSeconds: number | null;
   [key: string]: unknown;
 }) {
-  const { agent, durationSeconds, ...rest } = row;
+  const { agent, durationSeconds, customer, ...rest } = row;
   return {
     ...rest,
+    customer: resolveCustomerRef({ ...row, customer }),
     durationSeconds,
     duration: formatDuration(durationSeconds),
     agent: mapUserRef(agent),
@@ -97,11 +121,16 @@ export function mapCase(row: {
 
 export function mapFollowUp(row: {
   assignedTo: UserRefRecord;
+  customer?: CustomerRef | null;
+  customerId?: string | null;
+  customerName?: string | null;
+  customerPhone?: string | null;
   [key: string]: unknown;
 }) {
-  const { assignedTo, ...rest } = row;
+  const { assignedTo, customer, ...rest } = row;
   return {
     ...rest,
+    customer: resolveCustomerRef({ ...row, customer }),
     assignedTo: mapUserRef(assignedTo),
   };
 }

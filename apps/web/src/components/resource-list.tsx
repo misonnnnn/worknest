@@ -111,7 +111,7 @@ export function ResourceListPage<T extends { id: string }>({
       />
 
       <Card className="gap-0 overflow-hidden py-0 shadow-none">
-        <div className="flex flex-col gap-2 border-b p-3 sm:flex-row sm:items-center">
+        <div className="flex flex-wrap items-center gap-2 border-b p-3">
           <Input
             placeholder={searchPlaceholder}
             value={search}
@@ -119,10 +119,10 @@ export function ResourceListPage<T extends { id: string }>({
               setPage(1);
               setSearch(e.target.value);
             }}
-            className="h-8 sm:max-w-xs"
+            className="h-8 w-full min-w-[12rem] flex-1 sm:max-w-xs sm:flex-none"
           />
           {filters}
-          <Button variant="outline" size="sm" onClick={() => void load()}>
+          <Button variant="outline" size="sm" className="shrink-0" onClick={() => void load()}>
             Refresh
           </Button>
         </div>

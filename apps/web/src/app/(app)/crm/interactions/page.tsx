@@ -16,12 +16,13 @@ import {
   PRIORITY_LABELS,
   STORE_LABELS,
   STORE_OPTIONS,
-  customerTitle,
+  interactionCustomerLabel,
+  interactionCustomerPhone,
   storeLabel,
   downloadInteractionsCsv,
   formatDateTime,
   previewText,
-  selectClassName,
+  filterSelectClassName,
   type CrmChannel,
   type CrmInteractionRow,
   type CrmInteractionStatus,
@@ -119,20 +120,24 @@ export default function CrmInteractionsPage() {
           </Button>
         }
         filters={
-          <div className="flex flex-wrap gap-2">
+          <>
             <Input
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="w-[140px]"
+              className="h-8 w-auto"
             />
             <Input
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="w-[140px]"
+              className="h-8 w-auto"
             />
-            <select className={selectClassName} value={agentId} onChange={(e) => setAgentId(e.target.value)}>
+            <select
+              className={filterSelectClassName}
+              value={agentId}
+              onChange={(e) => setAgentId(e.target.value)}
+            >
               <option value="">All agents</option>
               {(lookups?.agents ?? []).map((agent) => (
                 <option key={agent.id} value={agent.id}>
@@ -140,7 +145,11 @@ export default function CrmInteractionsPage() {
                 </option>
               ))}
             </select>
-            <select className={selectClassName} value={status} onChange={(e) => setStatus(e.target.value)}>
+            <select
+              className={filterSelectClassName}
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+            >
               <option value="">All statuses</option>
               {(lookups?.interactionStatuses ?? Object.keys(INTERACTION_STATUS_LABELS)).map((value) => (
                 <option key={value} value={value}>
@@ -149,7 +158,7 @@ export default function CrmInteractionsPage() {
               ))}
             </select>
             <select
-              className={selectClassName}
+              className={filterSelectClassName}
               value={priority}
               onChange={(e) => setPriority(e.target.value)}
             >
@@ -160,7 +169,11 @@ export default function CrmInteractionsPage() {
                 </option>
               ))}
             </select>
-            <select className={selectClassName} value={channel} onChange={(e) => setChannel(e.target.value)}>
+            <select
+              className={filterSelectClassName}
+              value={channel}
+              onChange={(e) => setChannel(e.target.value)}
+            >
               <option value="">All channels</option>
               {(lookups?.channels ?? Object.keys(CHANNEL_LABELS)).map((value) => (
                 <option key={value} value={value}>
@@ -169,7 +182,7 @@ export default function CrmInteractionsPage() {
               ))}
             </select>
             <select
-              className={selectClassName}
+              className={filterSelectClassName}
               value={interactionType}
               onChange={(e) => setInteractionType(e.target.value)}
             >
@@ -180,7 +193,11 @@ export default function CrmInteractionsPage() {
                 </option>
               ))}
             </select>
-            <select className={selectClassName} value={store} onChange={(e) => setStore(e.target.value)}>
+            <select
+              className={filterSelectClassName}
+              value={store}
+              onChange={(e) => setStore(e.target.value)}
+            >
               <option value="">All stores</option>
               {(lookups?.stores ?? STORE_OPTIONS).map((value) => (
                 <option key={value} value={value}>
@@ -188,7 +205,7 @@ export default function CrmInteractionsPage() {
                 </option>
               ))}
             </select>
-          </div>
+          </>
         }
         columns={[
           { key: 'date', header: 'Date', render: (i) => formatDateTime(i.interactionDate) },
@@ -197,10 +214,10 @@ export default function CrmInteractionsPage() {
             header: 'Case ID',
             render: (i) => <span className="mono text-xs">{i.case?.caseNumber ?? '—'}</span>,
           },
-          { key: 'customer', header: 'Customer', render: (i) => customerTitle(i.customer) },
+          { key: 'customer', header: 'Customer', render: (i) => interactionCustomerLabel(i) },
           { key: 'store', header: 'Store', render: (i) => storeLabel(i.store, i.storeOther) },
           { key: 'order', header: 'Order', render: (i) => i.orderNumber || '—' },
-          { key: 'phone', header: 'Phone', render: (i) => i.customer.phone || '—' },
+          { key: 'phone', header: 'Phone', render: (i) => interactionCustomerPhone(i) },
           { key: 'issue', header: 'Issue', render: (i) => previewText(i.inquiry, 50) },
           { key: 'agent', header: 'Agent', render: (i) => i.agent?.displayName ?? '—' },
           { key: 'duration', header: 'Duration', render: (i) => i.duration ?? '—' },

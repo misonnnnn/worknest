@@ -302,6 +302,8 @@ export const crmService = {
           data: {
             interactionNumber: await nextInteractionNumber(),
             customerId: customer.id,
+            customerName: customer.name,
+            customerPhone: customer.phone,
             agentId,
             ...storeData,
             orderNumber: record.orderNumber?.trim() || null,

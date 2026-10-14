@@ -3,7 +3,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { ConfirmDialog } from '@/components/confirm-dialog';
-import { CustomerPicker } from '@/components/crm/customer-picker';
 import { apiRequest, ApiClientError } from '@/lib/api';
 import {
   CHANNEL_LABELS,
@@ -15,7 +14,6 @@ import {
   RESOLUTION_LABELS,
   STORE_LABELS,
   STORE_OPTIONS,
-  customerTitle,
   selectClassName,
   textareaClassName,
   toDateTimeLocal,
@@ -44,6 +42,8 @@ import { Label } from '@/components/ui/label';
 
 export type InteractionFormState = {
   customerId: string;
+  customerName: string;
+  customerPhone: string;
   agentId: string;
   store: CrmStore | '';
   storeOther: string;
@@ -66,6 +66,8 @@ export type InteractionFormState = {
 
 const emptyForm = (userId: string): InteractionFormState => ({
   customerId: '',
+  customerName: '',
+  customerPhone: '',
   agentId: userId,
   store: '',
   storeOther: '',
@@ -105,7 +107,6 @@ export function InteractionFormDialog({
 }) {
   const { user } = useAuth();
   const [form, setForm] = useState<InteractionFormState>(emptyForm(user?.id ?? ''));
-  const [customer, setCustomer] = useState<CrmCustomerRow | null>(presetCustomer ?? null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
@@ -121,7 +122,9 @@ export function InteractionFormDialog({
     if (editing) {
       next = {
         ...next,
-        customerId: editing.customerId,
+        customerId: editing.customerId ?? '',
+        customerName: editing.customerName || editing.customer?.name || '',
+        customerPhone: editing.customerPhone || editing.customer?.phone || '',
         agentId: editing.agentId,
         store: editing.store,
         storeOther: editing.storeOther ?? '',
@@ -136,19 +139,10 @@ export function InteractionFormDialog({
         status: editing.status,
         priority: editing.priority,
       };
-      setCustomer({
-        ...editing.customer,
-        notes: null,
-        isActive: true,
-        interactionCount: 0,
-        caseCount: 0,
-        followUpCount: 0,
-      });
     } else if (presetCustomer) {
       next.customerId = presetCustomer.id;
-      setCustomer(presetCustomer);
-    } else {
-      setCustomer(null);
+      next.customerName = presetCustomer.name;
+      next.customerPhone = presetCustomer.phone ?? '';
     }
     setForm(next);
     baselineRef.current = snapshot(next);
@@ -179,8 +173,8 @@ export function InteractionFormDialog({
 
   async function onSave(e: FormEvent) {
     e.preventDefault();
-    if (!form.customerId) {
-      setError('Select a customer first.');
+    if (!form.customerName.trim()) {
+      setError('Enter the customer name.');
       return;
     }
     if (!form.store) {
@@ -191,7 +185,9 @@ export function InteractionFormDialog({
     setError(null);
     try {
       const body = {
-        customerId: form.customerId,
+        customerId: form.customerId || null,
+        customerName: form.customerName.trim(),
+        customerPhone: form.customerPhone.trim() || null,
         caseId: editing?.caseId || presetCaseId || undefined,
         agentId: form.agentId || undefined,
         store: form.store,
@@ -242,32 +238,28 @@ export function InteractionFormDialog({
 
           <section className="space-y-3 rounded-lg border p-3">
             <h3 className="text-sm font-medium">Customer</h3>
-            <CustomerPicker
-              value={form.customerId}
-              selectedLabel={customer ? customerTitle(customer) : ''}
-              disabled={Boolean(presetCustomer) && !editing}
-              allowCreate={!editing && !presetCustomer}
-              onSelect={(selected) => {
-                setCustomer(selected);
-                setForm((prev) => ({ ...prev, customerId: selected.id }));
-              }}
-            />
-            {customer ? (
-              <div className="grid gap-1 rounded-md bg-muted/50 px-3 py-2 text-sm sm:grid-cols-2">
-                <p>
-                  <span className="text-muted-foreground">Name: </span>
-                  {customer.name}
-                </p>
-                <p>
-                  <span className="text-muted-foreground">Phone: </span>
-                  {customer.phone || '—'}
-                </p>
-                <p>
-                  <span className="text-muted-foreground">Email: </span>
-                  {customer.email || '—'}
-                </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="customerName">Name</Label>
+                <Input
+                  id="customerName"
+                  required
+                  autoFocus={!presetCustomer && !editing}
+                  value={form.customerName}
+                  onChange={(e) => setForm((prev) => ({ ...prev, customerName: e.target.value }))}
+                  placeholder="Customer name"
+                />
               </div>
-            ) : null}
+              <div className="space-y-1.5">
+                <Label htmlFor="customerPhone">Phone</Label>
+                <Input
+                  id="customerPhone"
+                  value={form.customerPhone}
+                  onChange={(e) => setForm((prev) => ({ ...prev, customerPhone: e.target.value }))}
+                  placeholder="Optional"
+                />
+              </div>
+            </div>
           </section>
 
           <section className="space-y-3 rounded-lg border p-3">

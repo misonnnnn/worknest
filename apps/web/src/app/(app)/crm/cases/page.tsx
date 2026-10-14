@@ -15,6 +15,7 @@ import {
   customerTitle,
   formatDateTime,
   previewText,
+  filterSelectClassName,
   selectClassName,
   textareaClassName,
   type CrmCaseRow,
@@ -175,9 +176,9 @@ export default function CrmCasesPage() {
         onRowClick={(crmCase) => router.push(`/crm/cases/${crmCase.id}`)}
         queryExtras={queryExtras}
         filters={
-          <div className="flex flex-wrap gap-2">
+          <>
             <select
-              className={selectClassName}
+              className={filterSelectClassName}
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -189,7 +190,7 @@ export default function CrmCasesPage() {
               ))}
             </select>
             <select
-              className={selectClassName}
+              className={filterSelectClassName}
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
             >
@@ -200,7 +201,7 @@ export default function CrmCasesPage() {
                 </option>
               ))}
             </select>
-          </div>
+          </>
         }
         columns={[
           {

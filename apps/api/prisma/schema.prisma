@@ -756,7 +756,9 @@ model CrmCase {
 model CrmInteraction {
   id               String                 @id @default(uuid()) @db.Uuid
   interactionNumber String                @unique
-  customerId       String                 @db.Uuid
+  customerId       String?                @db.Uuid
+  customerName     String
+  customerPhone    String?
   caseId           String?                @db.Uuid
   agentId          String                 @db.Uuid
   store            CrmStore               @default(OTHER)
@@ -775,13 +777,15 @@ model CrmInteraction {
   legacyRecordId   String?
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
-  customer         Customer               @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  customer         Customer?              @relation(fields: [customerId], references: [id], onDelete: Restrict)
   case             CrmCase?               @relation(fields: [caseId], references: [id], onDelete: SetNull)
   agent            User                   @relation("CrmInteractionAgent", fields: [agentId], references: [id], onDelete: Restrict)
   followUps        CrmFollowUp[]
   comments         CrmLogComment[]
 
   @@index([customerId])
+  @@index([customerName])
+  @@index([customerPhone])
   @@index([caseId])
   @@index([agentId])
   @@index([interactionDate])
@@ -798,7 +802,9 @@ model CrmFollowUp {
   id             String             @id @default(uuid()) @db.Uuid
   interactionId  String?            @db.Uuid
   caseId         String?            @db.Uuid
-  customerId     String             @db.Uuid
+  customerId     String?            @db.Uuid
+  customerName   String?
+  customerPhone  String?
   assignedToId   String             @db.Uuid
   followUpDate   DateTime
   followUpType   CrmFollowUpType    @default(CALL)
@@ -808,10 +814,11 @@ model CrmFollowUp {
   updatedAt      DateTime           @updatedAt
   interaction    CrmInteraction?    @relation(fields: [interactionId], references: [id], onDelete: SetNull)
   case           CrmCase?           @relation(fields: [caseId], references: [id], onDelete: SetNull)
-  customer       Customer           @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  customer       Customer?          @relation(fields: [customerId], references: [id], onDelete: Restrict)
   assignedTo     User               @relation("CrmFollowUpAssignee", fields: [assignedToId], references: [id], onDelete: Restrict)
 
   @@index([customerId])
+  @@index([customerName])
   @@index([interactionId])
   @@index([caseId])
   @@index([assignedToId])

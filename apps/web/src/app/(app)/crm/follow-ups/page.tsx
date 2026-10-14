@@ -14,6 +14,7 @@ import {
   customerTitle,
   formatDateTime,
   previewText,
+  filterSelectClassName,
   selectClassName,
   textareaClassName,
   toDateTimeLocal,
@@ -106,7 +107,7 @@ export default function CrmFollowUpsPage() {
       followUpCount: 0,
     });
     setForm({
-      customerId: item.customerId,
+      customerId: item.customerId ?? '',
       assignedToId: item.assignedToId,
       followUpDate: toDateTimeLocal(item.followUpDate),
       followUpType: item.followUpType,
@@ -181,9 +182,9 @@ export default function CrmFollowUpsPage() {
         onCreate={openCreate}
         queryExtras={queryExtras}
         filters={
-          <div className="flex flex-wrap gap-2">
+          <>
             <select
-              className={selectClassName}
+              className={filterSelectClassName}
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -195,7 +196,7 @@ export default function CrmFollowUpsPage() {
               ))}
             </select>
             <select
-              className={selectClassName}
+              className={filterSelectClassName}
               value={assignedToId}
               onChange={(e) => setAssignedToId(e.target.value)}
             >
@@ -206,7 +207,7 @@ export default function CrmFollowUpsPage() {
                 </option>
               ))}
             </select>
-          </div>
+          </>
         }
         columns={[
           { key: 'date', header: 'Follow-up date', render: (f) => formatDateTime(f.followUpDate) },
