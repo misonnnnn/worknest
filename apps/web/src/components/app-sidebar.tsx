@@ -109,7 +109,7 @@ const NAV_SECTIONS: NavSection[] = [
       // Temporarily hidden — free-text customer on logs; no customer master UI for now
       // { title: 'Customers', href: '/crm/customers', permission: 'crm.view' },
       { title: 'Logs', href: '/crm/interactions', permission: 'crm.view' },
-      { title: 'Cases', href: '/crm/cases', permission: 'crm.view' },
+      // { title: 'Cases', href: '/crm/cases', permission: 'crm.view' },
       { title: 'Follow-ups', href: '/crm/follow-ups', permission: 'crm.view' },
     ],
   },
