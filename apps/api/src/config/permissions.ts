@@ -234,6 +234,66 @@ export const PERMISSIONS = [
     action: 'manage_followups',
     description: 'Create and manage CRM follow-ups',
   },
+  {
+    key: 'helpdesk.view',
+    resource: 'helpdesk',
+    action: 'view',
+    description: 'View own or assigned helpdesk tickets',
+  },
+  {
+    key: 'helpdesk.view_all',
+    resource: 'helpdesk',
+    action: 'view_all',
+    description: 'View all helpdesk tickets and full dashboard',
+  },
+  {
+    key: 'helpdesk.create',
+    resource: 'helpdesk',
+    action: 'create',
+    description: 'Create helpdesk tickets',
+  },
+  {
+    key: 'helpdesk.update',
+    resource: 'helpdesk',
+    action: 'update',
+    description: 'Update ticket details, status, and priority',
+  },
+  {
+    key: 'helpdesk.assign',
+    resource: 'helpdesk',
+    action: 'assign',
+    description: 'Assign or reassign helpdesk tickets',
+  },
+  {
+    key: 'helpdesk.resolve',
+    resource: 'helpdesk',
+    action: 'resolve',
+    description: 'Resolve helpdesk tickets',
+  },
+  {
+    key: 'helpdesk.close',
+    resource: 'helpdesk',
+    action: 'close',
+    description: 'Close resolved helpdesk tickets',
+  },
+  {
+    key: 'helpdesk.reopen',
+    resource: 'helpdesk',
+    action: 'reopen',
+    description: 'Reopen resolved or closed helpdesk tickets',
+  },
+  {
+    key: 'helpdesk.comment',
+    resource: 'helpdesk',
+    action: 'comment',
+    description: 'Comment on helpdesk tickets',
+  },
+  {
+    key: 'helpdesk.manage_categories',
+    resource: 'helpdesk',
+    action: 'manage_categories',
+    description: 'Create and manage helpdesk ticket categories',
+  },
 ] as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[number]['key'];

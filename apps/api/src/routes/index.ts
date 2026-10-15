@@ -19,6 +19,7 @@ import numberMemoryRoutes from '../modules/number-memory/number-memory.routes';
 import aiRoutes from '../modules/ai/ai.routes';
 import projectsRoutes, { workItemsRouter } from '../modules/projects/projects.routes';
 import crmRoutes from '../modules/crm/crm.routes';
+import helpdeskRoutes from '../modules/helpdesk/helpdesk.routes';
 
 const router = Router();
 
@@ -47,5 +48,6 @@ router.use('/ai', aiRoutes);
 router.use('/projects', projectsRoutes);
 router.use('/work-items', workItemsRouter);
 router.use('/crm', crmRoutes);
+router.use('/helpdesk', helpdeskRoutes);
 
 export default router;

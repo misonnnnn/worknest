@@ -52,6 +52,11 @@ model User {
   crmInteractions        CrmInteraction[]      @relation("CrmInteractionAgent")
   crmFollowUps           CrmFollowUp[]         @relation("CrmFollowUpAssignee")
   crmLogComments         CrmLogComment[]
+  requestedITTickets     ITTicket[]            @relation("ITTicketRequester")
+  assignedITTickets      ITTicket[]            @relation("ITTicketAssignee")
+  itTicketComments       ITTicketComment[]
+  itTicketHistory        ITTicketHistory[]
+  itTicketAttachments    ITTicketAttachment[]
 
   @@index([isActive])
   @@map("users")
@@ -839,4 +844,122 @@ model CrmLogComment {
   @@index([interactionId])
   @@index([userId])
   @@map("crm_log_comments")
+}
+
+enum ITTicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ITTicketStatus {
+  OPEN
+  ASSIGNED
+  IN_PROGRESS
+  PENDING
+  RESOLVED
+  CLOSED
+  CANCELLED
+}
+
+model ITTicketCategory {
+  id          String     @id @default(uuid()) @db.Char(36)
+  name        String     @unique
+  description String?
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  tickets     ITTicket[]
+
+  @@index([isActive])
+  @@map("it_ticket_categories")
+}
+
+model ITTicketNumberSequence {
+  year       Int @id
+  nextNumber Int @default(1)
+
+  @@map("it_ticket_number_sequences")
+}
+
+model ITTicket {
+  id                String           @id @default(uuid()) @db.Char(36)
+  ticketNumber      String           @unique
+  title             String
+  description       String           @db.Text
+  categoryId        String           @db.Char(36)
+  requesterId       String           @db.Char(36)
+  assigneeId        String?          @db.Char(36)
+  priority          ITTicketPriority @default(MEDIUM)
+  status            ITTicketStatus   @default(OPEN)
+  resolutionSummary String?          @db.Text
+  resolvedAt        DateTime?
+  closedAt          DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  category          ITTicketCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  requester         User             @relation("ITTicketRequester", fields: [requesterId], references: [id], onDelete: Restrict)
+  assignee          User?            @relation("ITTicketAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  comments          ITTicketComment[]
+  history           ITTicketHistory[]
+  attachments       ITTicketAttachment[]
+
+  @@index([status])
+  @@index([priority])
+  @@index([requesterId])
+  @@index([assigneeId])
+  @@index([categoryId])
+  @@index([createdAt])
+  @@map("it_tickets")
+}
+
+model ITTicketAttachment {
+  id           String   @id @default(uuid()) @db.Char(36)
+  ticketId     String   @db.Char(36)
+  storageKey   String
+  originalName String
+  mimeType     String
+  size         Int
+  uploadedById String   @db.Char(36)
+  createdAt    DateTime @default(now())
+  ticket       ITTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+
+  @@index([ticketId])
+  @@index([uploadedById])
+  @@map("it_ticket_attachments")
+}
+
+model ITTicketComment {
+  id         String   @id @default(uuid()) @db.Char(36)
+  ticketId   String   @db.Char(36)
+  userId     String   @db.Char(36)
+  message    String   @db.Text
+  isInternal Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  ticket     ITTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([ticketId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("it_ticket_comments")
+}
+
+model ITTicketHistory {
+  id        String   @id @default(uuid()) @db.Char(36)
+  ticketId  String   @db.Char(36)
+  userId    String?  @db.Char(36)
+  action    String
+  oldValue  String?
+  newValue  String?
+  createdAt DateTime @default(now())
+  ticket    ITTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([ticketId, createdAt])
+  @@index([userId])
+  @@map("it_ticket_history")
 }

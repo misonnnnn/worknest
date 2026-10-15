@@ -195,6 +195,33 @@ npm run dev:web
 
 The browser calls `POST /api/ai/chat` on Express. Express calls Gemini. The API key never leaves the backend.
 
+## Helpdesk / IT Ticketing
+
+IT support tickets at `/helpdesk/*` with dashboard, my tickets, assigned tickets, categories, comments (public + internal notes), and status workflow.
+
+API routes: `/api/helpdesk/dashboard`, `/api/helpdesk/lookups`, `/api/helpdesk/tickets/*`, `/api/helpdesk/categories/*`
+
+Permissions: `helpdesk.view`, `helpdesk.view_all`, `helpdesk.create`, `helpdesk.update`, `helpdesk.assign`, `helpdesk.resolve`, `helpdesk.close`, `helpdesk.reopen`, `helpdesk.comment`, `helpdesk.manage_categories`
+
+After pulling:
+
+```bash
+npm run db:migrate
+npm run db:seed
+```
+
+Log out/in to refresh permissions.
+
+**Seeded IT accounts** (password from `IT_SEED_PASSWORD`, falls back to `ADMIN_PASSWORD`; only set on first create — re-seed does not reset IT passwords):
+
+| Email | Role |
+|-------|------|
+| `it.manager@worknest.local` | IT Manager |
+| `it.support1@worknest.local` | IT Technician |
+| `it.support2@worknest.local` | IT Technician |
+
+Employees with the `Employee` role (e.g. `johndoe@worknesterp.com`) can create and view their own tickets.
+
 ## RBAC
 
 Permissions use `resource.action` keys (for example `employees.view`, `roles.assign`).

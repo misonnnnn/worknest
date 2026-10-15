@@ -17,7 +17,8 @@ import {
   Gamepad2,
   Keyboard,
   Brain,
-  Headset
+  Headset,
+  LifeBuoy,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -111,6 +112,21 @@ const NAV_SECTIONS: NavSection[] = [
       { title: 'Logs', href: '/crm/interactions', permission: 'crm.view' },
       // { title: 'Cases', href: '/crm/cases', permission: 'crm.view' },
       { title: 'Follow-ups', href: '/crm/follow-ups', permission: 'crm.view' },
+    ],
+  },
+  {
+    title: 'Helpdesk',
+    icon: LifeBuoy,
+    items: [
+      { title: 'Dashboard', href: '/helpdesk/dashboard', permission: 'helpdesk.view' },
+      { title: 'All Tickets', href: '/helpdesk/tickets', permission: 'helpdesk.view_all' },
+      { title: 'My Tickets', href: '/helpdesk/my-tickets', permission: 'helpdesk.view' },
+      { title: 'Assigned to Me', href: '/helpdesk/assigned', permission: 'helpdesk.view' },
+      {
+        title: 'Categories',
+        href: '/helpdesk/categories',
+        permission: 'helpdesk.manage_categories',
+      },
     ],
   },
   {
