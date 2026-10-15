@@ -211,7 +211,6 @@ export default function HelpdeskTicketDetailPage() {
                       rel="noreferrer"
                       className="block overflow-hidden rounded-md border hover:bg-muted/40"
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={mediaUrl(file.url)}
                         alt={file.originalName}

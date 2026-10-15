@@ -14,7 +14,6 @@ import {
 } from '@/components/crm/badges';
 import { apiRequest, ApiClientError } from '@/lib/api';
 import {
-  INTERACTION_TYPE_LABELS,
   STORE_LABELS,
   STORE_OPTIONS,
   customerTitle,
