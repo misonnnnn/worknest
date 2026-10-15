@@ -31,8 +31,8 @@ export const warehousesService = {
     const where = query.search
       ? {
           OR: [
-            { code: { contains: query.search, mode: 'insensitive' as const } },
-            { name: { contains: query.search, mode: 'insensitive' as const } },
+            { code: { contains: query.search } },
+            { name: { contains: query.search } },
           ],
         }
       : {};

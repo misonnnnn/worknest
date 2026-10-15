@@ -154,8 +154,8 @@ export const projectsService = {
         query.search
           ? {
               OR: [
-                { name: { contains: query.search, mode: 'insensitive' as const } },
-                { key: { contains: query.search, mode: 'insensitive' as const } },
+                { name: { contains: query.search } },
+                { key: { contains: query.search } },
               ],
             }
           : {},

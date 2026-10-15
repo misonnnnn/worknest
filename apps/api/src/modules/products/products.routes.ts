@@ -39,8 +39,8 @@ export const productsService = {
         query.search
           ? {
               OR: [
-                { sku: { contains: query.search, mode: 'insensitive' as const } },
-                { name: { contains: query.search, mode: 'insensitive' as const } },
+                { sku: { contains: query.search } },
+                { name: { contains: query.search } },
               ],
             }
           : {},

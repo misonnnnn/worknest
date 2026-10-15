@@ -1,0 +1,2 @@
+-- Optional init script for Docker MySQL
+-- Database is created via MYSQL_DATABASE; utf8mb4 is set in docker-compose.

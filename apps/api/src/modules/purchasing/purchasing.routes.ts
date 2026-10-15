@@ -85,8 +85,8 @@ export const purchasingService = {
         query.search
           ? {
               OR: [
-                { number: { contains: query.search, mode: 'insensitive' as const } },
-                { supplier: { name: { contains: query.search, mode: 'insensitive' as const } } },
+                { number: { contains: query.search } },
+                { supplier: { name: { contains: query.search } } },
               ],
             }
           : {},

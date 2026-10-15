@@ -101,14 +101,14 @@ function listWhere(query: z.infer<typeof listSchema>) {
       query.search
         ? {
             OR: [
-              { interactionNumber: { contains: query.search, mode: 'insensitive' as const } },
-              { inquiry: { contains: query.search, mode: 'insensitive' as const } },
-              { notes: { contains: query.search, mode: 'insensitive' as const } },
-              { orderNumber: { contains: query.search, mode: 'insensitive' as const } },
-              { storeOther: { contains: query.search, mode: 'insensitive' as const } },
-              { case: { caseNumber: { contains: query.search, mode: 'insensitive' as const } } },
-              { customerName: { contains: query.search, mode: 'insensitive' as const } },
-              { customerPhone: { contains: query.search, mode: 'insensitive' as const } },
+              { interactionNumber: { contains: query.search } },
+              { inquiry: { contains: query.search } },
+              { notes: { contains: query.search } },
+              { orderNumber: { contains: query.search } },
+              { storeOther: { contains: query.search } },
+              { case: { caseNumber: { contains: query.search } } },
+              { customerName: { contains: query.search } },
+              { customerPhone: { contains: query.search } },
               { customer: customerSearchWhere(query.search) },
             ],
           }
@@ -122,7 +122,7 @@ function listWhere(query: z.infer<typeof listSchema>) {
       query.interactionType ? { interactionType: query.interactionType } : {},
       query.store ? { store: query.store } : {},
       query.orderNumber
-        ? { orderNumber: { contains: query.orderNumber, mode: 'insensitive' as const } }
+        ? { orderNumber: { contains: query.orderNumber } }
         : {},
       dateFrom || dateTo
         ? {

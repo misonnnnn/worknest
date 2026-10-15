@@ -21,8 +21,8 @@ export const permissionsService = {
         query.search
           ? {
               OR: [
-                { key: { contains: query.search, mode: 'insensitive' as const } },
-                { description: { contains: query.search, mode: 'insensitive' as const } },
+                { key: { contains: query.search } },
+                { description: { contains: query.search } },
               ],
             }
           : {},

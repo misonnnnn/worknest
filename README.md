@@ -1,6 +1,6 @@
 # WorkNest ERP
 
-Production-oriented ERP portfolio project. **Phase 1** delivers the foundation: monorepo setup, PostgreSQL + Prisma, JWT auth, RBAC, organization structure, employees, audit logs, and an admin dashboard.
+Production-oriented ERP portfolio project. **Phase 1** delivers the foundation: monorepo setup, MySQL + Prisma, JWT auth, RBAC, organization structure, employees, audit logs, and an admin dashboard.
 
 ## Stack
 
@@ -8,7 +8,7 @@ Production-oriented ERP portfolio project. **Phase 1** delivers the foundation: 
 |------|------------|
 | Frontend | Next.js (App Router), TypeScript, Tailwind CSS |
 | Backend | Node.js, Express, TypeScript, Zod, Swagger |
-| Database | PostgreSQL, Prisma |
+| Database | MySQL, Prisma |
 | Auth | JWT access + refresh tokens, Argon2 password hashing |
 | Tooling | npm workspaces, ESLint, Prettier, Vitest, Docker Compose |
 
@@ -20,14 +20,14 @@ worknest/
 ├── apps/web          # Next.js admin UI
 ├── packages/types    # Shared TypeScript contracts
 ├── packages/config   # Shared TS/ESLint config
-├── docker/           # Postgres init scripts
+├── docker/           # MySQL init scripts
 └── docker-compose.yml
 ```
 
 ## Prerequisites
 
 - Node.js 20+
-- PostgreSQL 16+ (local install **or** Docker)
+- MySQL 8+ (local install / Laragon **or** Docker)
 - npm 10+
 
 ## Quick start
@@ -39,7 +39,7 @@ cp .env.example .env
 cp .env.example apps/api/.env
 ```
 
-Update `DATABASE_URL` to match your PostgreSQL credentials.
+Update `DATABASE_URL` to match your MySQL credentials.
 
 Seed admin credentials (defaults in `.env.example`):
 
@@ -54,16 +54,16 @@ Seed admin credentials (defaults in `.env.example`):
 docker compose up -d
 ```
 
-**Option B — Local PostgreSQL**
+**Option B — Local MySQL (e.g. Laragon)**
 
 ```sql
-CREATE DATABASE worknest;
+CREATE DATABASE worknest CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
 Then set `DATABASE_URL` accordingly, for example:
 
 ```env
-DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/worknest?schema=public
+DATABASE_URL=mysql://root:@localhost:3306/worknest
 ```
 
 ### 3. Install & migrate
@@ -71,7 +71,7 @@ DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/worknest?schema=public
 ```bash
 npm install
 npm run db:generate
-npm run db:migrate:dev -- --name init
+npm run db:migrate
 npm run db:seed
 ```
 
@@ -141,7 +141,7 @@ Minimal typing speed game integrated into the ERP:
 - **Leaderboard** — global / weekly / monthly with filters
 - **My Statistics** — personal bests, averages, recent tests
 
-Flow: client-side typing → submit final result only → PostgreSQL via `/api/typing-tests/*`
+Flow: client-side typing → submit final result only → MySQL via `/api/typing-tests/*`
 
 Permissions: `typing-tests.view`, `typing-tests.play`
 

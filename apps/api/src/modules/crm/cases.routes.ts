@@ -59,9 +59,9 @@ export const casesService = {
         query.search
           ? {
               OR: [
-                { caseNumber: { contains: query.search, mode: 'insensitive' as const } },
-                { subject: { contains: query.search, mode: 'insensitive' as const } },
-                { description: { contains: query.search, mode: 'insensitive' as const } },
+                { caseNumber: { contains: query.search } },
+                { subject: { contains: query.search } },
+                { description: { contains: query.search } },
                 { customer: customerSearchWhere(query.search) },
               ],
             }

@@ -117,10 +117,10 @@ export const employeesService = {
         query.search
           ? {
               OR: [
-                { firstName: { contains: query.search, mode: 'insensitive' as const } },
-                { lastName: { contains: query.search, mode: 'insensitive' as const } },
-                { email: { contains: query.search, mode: 'insensitive' as const } },
-                { employeeNumber: { contains: query.search, mode: 'insensitive' as const } },
+                { firstName: { contains: query.search } },
+                { lastName: { contains: query.search } },
+                { email: { contains: query.search } },
+                { employeeNumber: { contains: query.search } },
               ],
             }
           : {},

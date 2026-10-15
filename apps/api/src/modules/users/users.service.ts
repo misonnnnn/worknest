@@ -74,7 +74,7 @@ function mapUser(user: {
 export const usersService = {
   async list(query: ListQuery) {
     const where = query.search
-      ? { email: { contains: query.search, mode: 'insensitive' as const } }
+      ? { email: { contains: query.search } }
       : {};
 
     const sortable = new Set(['email', 'createdAt', 'updatedAt', 'lastLoginAt']);

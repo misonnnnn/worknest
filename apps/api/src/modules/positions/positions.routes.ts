@@ -39,8 +39,8 @@ export const positionsService = {
         query.search
           ? {
               OR: [
-                { title: { contains: query.search, mode: 'insensitive' as const } },
-                { code: { contains: query.search, mode: 'insensitive' as const } },
+                { title: { contains: query.search } },
+                { code: { contains: query.search } },
               ],
             }
           : {},

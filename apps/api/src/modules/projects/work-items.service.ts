@@ -103,8 +103,8 @@ export const workItemsService = {
         query.search
           ? {
               OR: [
-                { title: { contains: query.search, mode: 'insensitive' as const } },
-                { project: { key: { contains: query.search, mode: 'insensitive' as const } } },
+                { title: { contains: query.search } },
+                { project: { key: { contains: query.search } } },
               ],
             }
           : {},

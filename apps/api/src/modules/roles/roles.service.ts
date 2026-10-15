@@ -46,7 +46,7 @@ function mapRole(role: {
 export const rolesService = {
   async list(query: { page: number; pageSize: number; search?: string }) {
     const where = query.search
-      ? { name: { contains: query.search, mode: 'insensitive' as const } }
+      ? { name: { contains: query.search } }
       : {};
 
     const [total, rows] = await Promise.all([

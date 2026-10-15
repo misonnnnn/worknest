@@ -85,8 +85,8 @@ export const requisitionsService = {
         query.search
           ? {
               OR: [
-                { number: { contains: query.search, mode: 'insensitive' as const } },
-                { notes: { contains: query.search, mode: 'insensitive' as const } },
+                { number: { contains: query.search } },
+                { notes: { contains: query.search } },
               ],
             }
           : {},

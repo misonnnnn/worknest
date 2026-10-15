@@ -27,8 +27,8 @@ export const auditLogsService = {
         query.search
           ? {
               OR: [
-                { resource: { contains: query.search, mode: 'insensitive' as const } },
-                { resourceId: { contains: query.search, mode: 'insensitive' as const } },
+                { resource: { contains: query.search } },
+                { resourceId: { contains: query.search } },
               ],
             }
           : {},

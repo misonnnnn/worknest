@@ -63,9 +63,9 @@ export const followUpsService = {
         query.search
           ? {
               OR: [
-                { notes: { contains: query.search, mode: 'insensitive' as const } },
-                { customerName: { contains: query.search, mode: 'insensitive' as const } },
-                { customerPhone: { contains: query.search, mode: 'insensitive' as const } },
+                { notes: { contains: query.search } },
+                { customerName: { contains: query.search } },
+                { customerPhone: { contains: query.search } },
                 { customer: customerSearchWhere(query.search) },
               ],
             }

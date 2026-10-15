@@ -96,7 +96,7 @@ function mapEnum<T extends string>(
 async function matchAgent(email?: string | null, name?: string | null) {
   if (email) {
     const user = await prisma.user.findFirst({
-      where: { email: { equals: email.trim(), mode: 'insensitive' } },
+      where: { email: { equals: email.trim() } },
       select: { id: true },
     });
     if (user) return user.id;
@@ -107,8 +107,8 @@ async function matchAgent(email?: string | null, name?: string | null) {
     const lastName = parts.slice(1).join(' ') || undefined;
     const employee = await prisma.employee.findFirst({
       where: {
-        firstName: { equals: firstName, mode: 'insensitive' },
-        ...(lastName ? { lastName: { equals: lastName, mode: 'insensitive' } } : {}),
+        firstName: { equals: firstName },
+        ...(lastName ? { lastName: { equals: lastName } } : {}),
         userId: { not: null },
       },
       select: { userId: true },
@@ -140,7 +140,7 @@ async function matchOrCreateCustomer(record: z.infer<typeof importRecordSchema>,
   }
   if (email) {
     const byEmail = await prisma.customer.findFirst({
-      where: { email: { equals: email, mode: 'insensitive' } },
+      where: { email: { equals: email } },
     });
     if (byEmail) return { customer: byEmail, created: false };
   }
@@ -275,7 +275,7 @@ export const crmService = {
             (phone && (await prisma.customer.findFirst({ where: { phone } }))) ||
             (email &&
               (await prisma.customer.findFirst({
-                where: { email: { equals: email, mode: 'insensitive' } },
+                where: { email: { equals: email } },
               })));
           if (matched) report.matchedCustomers += 1;
           else if (input.createMissingCustomers) report.createdCustomers += 1;
